@@ -1,0 +1,1263 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="application-version" content="1.22.8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HexWorld 1.22.8</title>
+<style>
+:root{color-scheme:dark;--bg:#171b19;--panel:#222925;--line:#46534b;--ink:#e5e9e5;--muted:#aab5ad;--accent:#91b69a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,sans-serif;overflow:hidden}
+header{height:58px;display:flex;align-items:center;padding:0 18px;border-bottom:1px solid var(--line);background:#202722;gap:18px}header strong{font-size:16px}header span{color:var(--muted)}#togglePalette{margin-left:auto}
+main{position:relative;height:calc(100vh - 58px);display:grid;grid-template-columns:250px 1fr;min-height:0}.sidebar{padding:16px;background:var(--panel);border-right:1px solid var(--line);overflow:auto}.group{margin-bottom:20px}.group h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px}.control{display:flex;justify-content:space-between;align-items:center;margin:10px 0 5px}.control output{color:var(--accent);font-variant-numeric:tabular-nums}input[type=range]{width:100%;accent-color:var(--accent)}button{font:inherit;color:var(--ink);background:#303a33;border:1px solid var(--line);border-radius:6px;padding:8px 10px;cursor:pointer}button:hover{border-color:var(--accent)}button.active{border-color:var(--accent);background:#354a3a}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button#waterTool,.actions button#roadTool{width:190px;min-width:190px;max-width:190px;flex:0 0 190px;white-space:nowrap;text-align:center}.stage{position:relative;min-width:0;min-height:0;background:#aab2a7;background-image:radial-gradient(#89958b 0.7px,transparent .7px);background-size:16px 16px}.stage{overflow:hidden}.map-scroll{position:absolute;inset:0;overflow:auto;overscroll-behavior:contain}.map-scroll #structureLayer,.map-scroll #riverLayer,.map-scroll #roadLayer{position:absolute;left:0;top:0;pointer-events:none}.map-scroll #structureLayer{z-index:1}.map-scroll #riverLayer{z-index:2}.map-scroll #roadLayer{z-index:3}.map-scroll #borderLayer{position:absolute;left:0;top:0;z-index:4;pointer-events:none}.map-scroll.river-mode #riverLayer,.map-scroll.road-mode #roadLayer{pointer-events:auto;cursor:crosshair}.map-scroll.border-mode #borderLayer{pointer-events:auto;cursor:crosshair}.map-scroll canvas{display:block;width:auto;height:auto;max-width:none;max-height:none;cursor:crosshair}canvas{display:block;cursor:crosshair}
+#palette.palette-hidden{display:none}#palette{position:absolute;isolation:isolate;top:18px;right:18px;width:260px;background:rgba(28,35,30,.96);border:1px solid #65766a;border-radius:9px;box-shadow:0 8px 30px #0007;z-index:3;overflow:hidden}#paletteHead{height:38px;padding:8px 11px;background:#303b33;cursor:move;display:flex;justify-content:space-between;align-items:center;font-weight:600;user-select:none}#paletteBody{padding:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.terrain{min-width:0;border:1px solid #65766a;border-radius:7px;padding:7px;background:#202722;color:var(--muted);cursor:pointer;text-align:center;font-size:12px}.terrain.active{border:2px solid #b6dbb9;padding:6px;background:#34483a;color:#fff}.terrain-icon{width:100%;height:92px;display:block}.variant-strip{display:none;grid-column:1/-1;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:8px;border:1px solid #536257;border-radius:7px;background:#1a211c}.variant-strip.open{display:grid}.variant{min-width:0;padding:4px;border:1px solid #536257;background:#252e28;border-radius:5px;color:var(--muted);font-size:10px}.variant.active{border:2px solid #b6dbb9;padding:3px;color:#fff}.variant canvas{width:100%;height:auto;aspect-ratio:1.15}.tile{border:1px solid #65766a;border-radius:6px;padding:5px;background:#202722;cursor:pointer;text-align:center;font-size:11px;color:var(--muted)}.tile.selected{border:2px solid #b6dbb9;padding:4px;background:#34483a;color:#fff}.tile canvas{width:100%;height:auto;aspect-ratio:1.15;cursor:pointer}.hint{font-size:12px;color:var(--muted);margin-top:10px}.status{position:absolute;left:14px;bottom:12px;background:#202722dd;color:#e6eee7;border:1px solid #526156;border-radius:5px;padding:6px 9px;font-size:12px;pointer-events:none}
+@media(max-width:700px){main{grid-template-columns:190px 1fr}.sidebar{padding:10px}#palette{width:210px;right:8px;top:8px}#paletteBody{gap:5px;padding:7px}}
+
+/* Palette compatta: sei terreni in due righe e una striscia varianti espandibile. */
+#palette{width:320px;max-width:calc(100vw - 24px);height:min(560px,calc((100vh - 58px)*.833333));max-height:calc((100vh - 58px)*.833333);min-height:170px;resize:vertical;display:flex;flex-direction:column}
+#paletteBody{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:10px;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;align-content:start}
+.terrain{min-height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px}
+.terrain.active{padding:4px}
+.terrain-icon{width:51px;height:51px;flex:0 0 51px;display:block}
+.variant-strip{display:none;grid-column:1/-1;flex-flow:row nowrap;align-items:stretch;gap:6px;overflow-x:auto;overflow-y:hidden;padding:7px;background:#1a211c;border:1px solid #536257;border-radius:7px;min-height:104px}
+.variant-strip.open{display:flex}
+.variant{flex:1 0 46px;max-width:52px;min-width:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:3px}
+.variant.active{padding:2px}
+.variant canvas{width:44px;height:44px;flex:0 0 44px;aspect-ratio:1;display:block}
+@media(max-width:700px){#palette{width:320px;max-width:calc(100vw - 16px)}.terrain-icon{width:51px;height:51px;flex-basis:51px}}
+
+
+#paletteFooter{flex:0 0 auto;padding:0 10px 10px;background:rgba(28,35,30,.96)}
+#paletteFooter:empty{display:none}
+#paletteFooter .variant-strip{display:flex;flex-flow:row nowrap;align-items:stretch;gap:6px;overflow-x:auto;overflow-y:hidden;min-height:104px;max-height:104px;padding:7px;background:#1a211c;border:1px solid #536257;border-radius:7px}
+#paletteFooter .variant{flex:0 0 46px;max-width:52px;min-width:46px}
+#paletteFooter .variant canvas{width:44px;height:44px}
+
+/* Varianti: distribuzione uniforme sull'intera larghezza del pannello. */
+#paletteFooter .variant{flex:1 1 0;max-width:none;min-width:0;padding:3px 2px;font-size:9px;white-space:nowrap}
+#paletteFooter .variant.active{padding:2px 1px}
+#paletteFooter .variant canvas{width:50px;height:50px;max-width:100%;flex:0 1 50px}
+#paletteFooter .variant span{white-space:nowrap;font-size:9px;line-height:1.15}
+
+#paletteHead{flex:0 0 38px}
+#paletteBody{overscroll-behavior:contain}
+#palette{resize:vertical;overflow:hidden}
+
+
+/* Palette sempre davanti agli altri livelli dell'editor. */
+#palette{position:absolute;z-index:99999;isolation:isolate}
+
+#paletteTitlebar{height:27px;min-height:27px;flex:0 0 27px;padding:3px 10px;background:#263129;border-bottom:1px solid #536257;color:#dce5dd;font-size:11px;font-weight:600;letter-spacing:.2px;display:flex;align-items:center;justify-content:space-between;cursor:move;user-select:none}
+#paletteHead{height:40px;min-height:40px;flex:0 0 40px;padding:4px 7px;gap:5px}
+.palette-tabs{display:flex;align-items:stretch;gap:3px;min-width:0;flex:1}
+.palette-tab{flex:1 1 0;min-width:0;padding:5px 7px;border:1px solid transparent;border-radius:5px;background:transparent;color:var(--muted);font-size:12px;white-space:nowrap}
+.palette-tab:hover{background:#3a473e;border-color:#536257}
+.palette-tab.active{background:#202722;border-color:#65766a;color:#fff}
+.palette-drag-handle{flex:0 0 auto;padding:0 3px;color:#aab5ad;font-size:13px;cursor:move}
+.palette-page{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden}
+.palette-page[hidden]{display:none}
+.empty-page{background:rgba(28,35,30,.96)}
+.structures-page{padding:9px;overflow:auto}
+.feature-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;align-content:start}
+.feature-tool{min-width:0;min-height:88px;padding:5px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#202722;border:1px solid #536257;border-radius:6px;color:var(--muted);font-size:10px;line-height:1.15;text-align:center;cursor:pointer}
+.feature-tool img{display:block;width:100%;height:55px;object-fit:contain;pointer-events:none}
+.feature-tool.active{border:2px solid #b6dbb9;padding:4px 2px;background:#34483a;color:#fff}
+
+
+.lines-page{padding:10px;overflow:auto}
+.line-tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(92px,auto));gap:8px;align-content:start}
+.line-tool{min-width:0;min-height:92px;padding:7px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:#202722;border:1px solid #536257;border-radius:7px;color:var(--muted);font-size:11px;line-height:1.2;text-align:center}
+.line-tool.active{border:2px solid #b6dbb9;padding:6px 3px;background:#34483a;color:#fff}
+.line-symbol{height:34px;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-size:31px;font-weight:700;line-height:1}
+.stream-symbol{color:#55A9C8}
+.river-symbol{color:#278FC9}
+.great-symbol{color:#17658F;font-size:36px}
+.trail-symbol{color:#918F82}
+.street-symbol{color:#68452F}
+.highway-symbol{color:#A66B3F}
+
+
+.line-tools{grid-template-rows:repeat(3,minmax(92px,auto))}
+.border-line .line-symbol{font-size:30px;letter-spacing:-2px}
+.province-symbol{color:#D6C58A}
+.region-symbol{color:#E6A34C}
+.state-symbol{color:#D66B68}
+
+
+#overviewButton{margin-left:auto;margin-right:8px}
+#overviewBackdrop{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.68);display:flex;align-items:center;justify-content:center}
+#overviewBackdrop[hidden]{display:none}
+#overviewDialog{width:75vw;height:75vh;max-width:75vw;max-height:75vh;box-sizing:border-box;padding:12px;background:#202722;border:1px solid #68776c;border-radius:10px;box-shadow:0 16px 55px rgba(0,0,0,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+#overviewHeading{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#f0f3ef;font-size:14px;font-weight:700}
+#overviewHeading span{font-size:11px;font-weight:400;color:#b9c5bb;text-align:right}
+#overviewCanvas{display:block;max-width:100%;max-height:calc(75vh - 60px);object-fit:contain;cursor:crosshair;touch-action:none;border:1px solid #657368;background:#c1c9bf}
+@media(max-width:700px){#overviewDialog{width:94vw;height:78vh;max-width:94vw;max-height:78vh;padding:8px}#overviewHeading{font-size:12px}#overviewHeading span{font-size:9px}}
+
+
+#mapSpacer{position:relative;pointer-events:none}
+#mapLayerStack{position:sticky;top:0;left:0;width:100%;height:100%;margin-top:0;z-index:1;pointer-events:none}
+#mapLayerStack canvas{position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;pointer-events:none}
+#mapLayerStack #map{pointer-events:auto!important;cursor:crosshair}
+#mapScroll #map{z-index:0}
+#mapScroll #structureLayer{z-index:1}
+#mapScroll #riverLayer{z-index:2}
+#mapScroll #roadLayer{z-index:3}
+#mapScroll #borderLayer{z-index:4}
+
+</style></head>
+<body>
+<header><strong>HexWorld</strong><span>Editor di mappe esagonali · v1.21.0</span><button id="overviewButton" type="button">Mappa completa</button><button id="togglePalette" type="button" aria-controls="palette" aria-expanded="true">Nascondi Elementi mappa</button></header>
+<main><aside class="sidebar">
+<div class="group"><h2>Griglia</h2><div class="control"><label for="radius">Zoom mappa</label><output id="radiusOut">42 px</output></div><input id="radius" type="range" min="24" max="100" value="42">
+<div class="control"><label for="cols">Colonne</label><output id="colsOut">24</output></div><input id="cols" type="range" min="8" max="80" value="24">
+<div class="control"><label for="rows">Righe</label><output id="rowsOut">16</output></div><input id="rows" type="range" min="6" max="50" value="16"></div>
+<div class="group"><h2>File</h2><div class="actions"><button id="saveJson" type="button">Salva JSON</button><button id="openJson" type="button">Apri JSON</button><button id="savePng" type="button">Salva PNG</button><input id="jsonFile" type="file" accept=".json,application/json" hidden></div></div>
+<div class="group"><h2>Strumenti</h2><div class="actions"><button id="erase">Cancella</button><button id="reset">Ripristina</button></div><p class="hint">Scegli un terreno nella palette. Apri la relativa striscia per cambiare variante, quindi tieni premuto il pulsante sinistro e trascina sulla mappa per dipingere.</p></div>
+<div class="group"><h2>Rendering</h2><p class="hint">Le texture vengono caricate una volta e disegnate con drawImage() su Canvas. Il ritaglio esagonale avviene durante il rendering; le immagini PNG originali mantengono il canale alpha.</p></div>
+</aside><section class="stage"><div class="map-scroll" id="mapScroll"><div id="mapLayerStack"><canvas id="map"></canvas><canvas id="structureLayer"></canvas><canvas id="riverLayer"></canvas><canvas id="roadLayer"></canvas><canvas id="borderLayer"></canvas></div><div id="mapSpacer" aria-hidden="true"></div></div></section><div id="palette">
+ <div id="paletteTitlebar"><span>Elementi mappa</span><span class="palette-drag-handle" aria-hidden="true">⋮⋮</span></div>
+ <div id="paletteHead">
+  <div class="palette-tabs" role="tablist" aria-label="Categorie">
+   <button class="palette-tab active" type="button" role="tab" aria-selected="true" data-tab="terrains">Terreni</button>
+   <button class="palette-tab" type="button" role="tab" aria-selected="false" data-tab="structures">Strutture</button>
+   <button class="palette-tab" type="button" role="tab" aria-selected="false" data-tab="lines">Linee</button>
+  </div>
+ </div>
+ <section class="palette-page active" data-page="terrains"><div id="paletteBody"></div><div id="paletteFooter"></div></section>
+ <section class="palette-page structures-page" data-page="structures" hidden><div id="featureGrid" class="feature-grid"></div></section>
+ <section class="palette-page lines-page" data-page="lines" hidden>
+  <div class="line-tools" role="group" aria-label="Strumenti di linea">
+   <button class="line-tool water-line" id="waterTool" type="button" data-mode="stream" aria-pressed="false"><span class="line-symbol stream-symbol" aria-hidden="true">〰</span><span>Torrente</span></button>
+   <button class="line-tool water-line" id="riverTool" type="button" data-mode="river" aria-pressed="false"><span class="line-symbol river-symbol" aria-hidden="true">≋</span><span>Fiume</span></button>
+   <button class="line-tool water-line" id="greatRiverTool" type="button" data-mode="great" aria-pressed="false"><span class="line-symbol great-symbol" aria-hidden="true">≋</span><span>Grande fiume</span></button>
+   <button class="line-tool road-line" id="roadTool" type="button" data-mode="trail" aria-pressed="false"><span class="line-symbol trail-symbol" aria-hidden="true">┄</span><span>Sentiero</span></button>
+   <button class="line-tool road-line" id="streetTool" type="button" data-mode="road" aria-pressed="false"><span class="line-symbol street-symbol" aria-hidden="true">━</span><span>Strada</span></button>
+   <button class="line-tool road-line" id="highwayTool" type="button" data-mode="highway" aria-pressed="false"><span class="line-symbol highway-symbol" aria-hidden="true">▰</span><span>Grande arteria</span></button>
+   <button class="line-tool border-line" id="provinceBorderTool" type="button" data-mode="province" aria-pressed="false"><span class="line-symbol province-symbol" aria-hidden="true">┄</span><span>Confine provinciale</span></button>
+   <button class="line-tool border-line" id="regionBorderTool" type="button" data-mode="region" aria-pressed="false"><span class="line-symbol region-symbol" aria-hidden="true">┄</span><span>Confine regionale</span></button>
+   <button class="line-tool border-line" id="stateBorderTool" type="button" data-mode="state" aria-pressed="false"><span class="line-symbol state-symbol" aria-hidden="true">┄</span><span>Confine statale</span></button>
+  </div>
+ </section>
+</div><div class="status" id="status">Caricamento texture…</div></main>
+<div id="overviewBackdrop" hidden>
+ <div id="overviewDialog" role="dialog" aria-modal="true" aria-label="Mappa completa">
+  <div id="overviewHeading">Mappa completa <span>Muovi il puntatore per spostare il riquadro; clicca per raggiungere la posizione</span></div>
+  <canvas id="overviewCanvas"></canvas>
+ </div>
+</div>
+
+<script>
+(()=>{'use strict';
+const assetPath='assets/tiles/';
+const terrainDefs={bushes:{label:'Cespugli',files:['Bushes001.png'],images:[],selected:0},clear:{label:'Pianura',files:[],images:[],selected:0},desert:{label:'Deserto',files:[],images:[],selected:0},dunes:{label:'Dune',files:[],images:[],selected:0},forest:{label:'Foresta',files:[],images:[],selected:0},grass:{label:'Prateria',files:[],images:[],selected:0},hills:{label:'Colline',files:[],images:[],selected:0},ice:{label:'Ghiacci',files:[],images:[],selected:0},jungle:{label:'Giungla',files:[],images:[],selected:0},mountains:{label:'Montagne',files:[],images:[],selected:0},mud:{label:'Fango',files:[],images:[],selected:0},ocean:{label:'Oceano',files:[],images:[],selected:0},pineTrees:{label:'Pineta',files:[],images:[],selected:0},rough:{label:'Terreno Accidentato',files:[],images:[],selected:0},snow:{label:'Neve',files:[],images:[],selected:0}};
+let radius=42,cols=24,rows=16,activeTerrain='bushes',erase=false,painted=new Map();
+const CHUNK_SIZE=10;
+let terrainChunkCache=new Map(),terrainDpr=1;
+let selectedFeature=null,structures=new Map();
+const featureDefs=[
+ {id:'capital_01',label:'Capitale',file:'assets/features/capital_01.png',image:null},
+ {id:'capital_02',label:'Capitale',file:'assets/features/capital_02.png',image:null},
+ {id:'city_01',label:'Città',file:'assets/features/city_01.png',image:null},
+ {id:'city_02',label:'Città',file:'assets/features/city_02.png',image:null},
+ {id:'city_03',label:'Città',file:'assets/features/city_03.png',image:null},
+ {id:'city_04',label:'Città',file:'assets/features/city_04.png',image:null},
+ {id:'city_ruins',label:'Rovine di città',file:'assets/features/city_ruins.png',image:null},
+ {id:'minor_fortress',label:'Fortezza minore',file:'assets/features/minor_fortress.png',image:null},
+ {id:'fortress_01',label:'Fortezza',file:'assets/features/fortress_01.png',image:null},
+ {id:'fortress_02',label:'Fortezza',file:'assets/features/fortress_02.png',image:null},
+ {id:'tower_01',label:'Torre',file:'assets/features/tower_01.png',image:null},
+ {id:'tower_02',label:'Torre',file:'assets/features/tower_02.png',image:null},
+ {id:'tower_ruins',label:'Rovine di torre',file:'assets/features/tower_ruins.png',image:null},
+ {id:'motte_bailey',label:'Motta e bailey',file:'assets/features/motte_bailey.png',image:null},
+ {id:'wood_fort',label:'Forte di legno',file:'assets/features/wood_fort.png',image:null},
+ {id:'wood_tower',label:'Torre di legno',file:'assets/features/wood_tower.png',image:null},
+ {id:'wizard_tower',label:'Torre del mago',file:'assets/features/wizard_tower.png',image:null},
+ {id:'inn',label:'Locanda',file:'assets/features/inn.png',image:null},
+ {id:'harbor',label:'Porto',file:'assets/features/harbor.png',image:null},
+ {id:'cathedral',label:'Cattedrale',file:'assets/features/cathedral.png',image:null},
+ {id:'lighthouse',label:'Faro',file:'assets/features/lighthouse.png',image:null},
+ {id:'farm',label:'Fattoria',file:'assets/features/farm.png',image:null},
+ {id:'town',label:'Borgo',file:'assets/features/town.png',image:null},
+ {id:'village_01',label:'Villaggio',file:'assets/features/village_01.png',image:null},
+ {id:'village_02',label:'Villaggio',file:'assets/features/village_02.png',image:null},
+ {id:'burrow',label:'Tana',file:'assets/features/burrow.png',image:null},
+ {id:'well',label:'Pozzo',file:'assets/features/well.png',image:null},
+];
+const canvas=document.getElementById('map'),ctx=canvas.getContext('2d');
+ const structureLayer=document.getElementById('structureLayer'),structureCtx=structureLayer.getContext('2d');
+ const riverLayer=document.getElementById('riverLayer'),riverCtx=riverLayer.getContext('2d');
+ const roadLayer=document.getElementById('roadLayer'),roadCtx=roadLayer.getContext('2d');
+ const borderLayer=document.getElementById('borderLayer'),borderCtx=borderLayer.getContext('2d');
+ const status=document.getElementById('status');
+ let riverMode=false,riverStart=null,riverPreview=[],riverPaths=[],riverHover=null;
+ let waterType='none',riverCurrentSeed=1;
+ let vertexNodes=[],vertexLookup=new Map(),vertexAdj=[],vertexGraphRadius=radius;
+ let roadMode=false,roadStart=null,roadPreview=[],roadPaths=[],roadHover=null;
+ let roadType='none',roadCurrentSeed=1;
+ let roadNodes=[],roadAdj=[];
+ let borderMode=false,borderType='none',borderStart=null,borderParent=null,borderPreview=[],borderPaths=[],borderHover=null;
+const key=(c,r)=>`${c},${r}`;
+function loadImage(file,onDone){const im=new Image();im.onload=()=>onDone(im,true);im.onerror=()=>onDone(im,false);im.src=assetPath+file;}
+function loadFeatureImages(){
+ let pending=featureDefs.length;
+ featureDefs.forEach(def=>{
+  const im=new Image();
+  im.onload=()=>{def.image=im;if(--pending===0){renderFeaturePalette();drawStructureLayer();}};
+  im.onerror=()=>{if(--pending===0){renderFeaturePalette();drawStructureLayer();}};
+  im.src=def.file;
+ });
+}
+
+function loadBushes(){let pending=terrainDefs.bushes.files.length;terrainDefs.bushes.files.forEach((f,i)=>loadImage(f,(im,ok)=>{if(ok)terrainDefs.bushes.images[i]=im;pending--;if(!pending){terrainDefs.bushes.images=terrainDefs.bushes.images.filter(Boolean);draw();renderPalette();status.textContent=terrainDefs.bushes.images.length+' texture Cespugli caricate';}}));}
+function loadClear(i=1){if(i>1){renderPalette();draw();status.textContent=terrainDefs.clear.images.length+' texture Pianura caricate';return;}const file='Clear'+String(i).padStart(3,'0')+'.png';loadImage(file,(im,ok)=>{if(!ok){renderPalette();draw();status.textContent=terrainDefs.clear.images.length+' texture Pianura caricate';return;}terrainDefs.clear.files.push(file);terrainDefs.clear.images.push(im);loadClear(i+1);});}
+function loadDesert(i=1){if(i>1){renderPalette();draw();return;}const file='Desert'+String(i).padStart(3,'0')+'.png';loadImage(file,(im,ok)=>{if(!ok){renderPalette();draw();status.textContent=terrainDefs.desert.images.length+' texture Deserto caricate';return;}terrainDefs.desert.files.push(file);terrainDefs.desert.images.push(im);loadDesert(i+1);});}
+function loadSet(type,prefix,i=1){
+ if(i>1){renderPalette();draw();return;}
+ const file=prefix+String(i).padStart(3,'0')+'.png';
+ loadImage(file,(im,ok)=>{
+  if(!ok){renderPalette();draw();status.textContent=terrainDefs[type].images.length+' texture '+terrainDefs[type].label+' caricate';return;}
+  terrainDefs[type].files.push(file);terrainDefs[type].images.push(im);
+  loadSet(type,prefix,i+1);
+ });
+}
+loadFeatureImages();
+function loadAllTerrainImages(){
+ const sources=[
+  ['bushes','Bushes001.png'],['clear','Clear001.png'],['desert','Desert001.png'],
+  ['dunes','Dunes001.png'],['forest','Forest001.png'],['grass','Grass001.png'],
+  ['hills','Hills001.png'],['ice','Ice001.png'],['jungle','Jungle001.png'],
+  ['mountains','Mountains001.png'],['mud','Mud001.png'],['ocean','Ocean001.png'],
+  ['pineTrees','PineTrees001.png'],['rough','Rough001.png'],['snow','Snow001.png']
+ ];
+ let pending=sources.length;
+ for(const [type,file] of sources){
+  loadImage(file,(im,ok)=>{
+   if(ok){terrainDefs[type].files=[file];terrainDefs[type].images=[im];}
+   if(--pending===0){
+    renderPalette();
+    draw();
+    status.textContent='Texture terreni caricate';
+   }
+  });
+ }
+}
+loadAllTerrainImages();
+function hexPath(g,x,y,r){g.beginPath();for(let i=0;i<6;i++){const a=Math.PI/180*(60*i),px=x+r*Math.cos(a),py=y+r*Math.sin(a);if(i===0)g.moveTo(px,py);else g.lineTo(px,py)}g.closePath()}
+function center(c,r){return {x:radius+ c*1.5*radius, y:Math.sqrt(3)*radius/2 + r*Math.sqrt(3)*radius+(c%2)*Math.sqrt(3)*radius/2}}
+function remapGraphPathsBeforeResize(){
+ const vertexPaths=[...riverPaths,...borderPaths];
+ const vertexArrays=[riverPreview,borderPreview];
+ const vertexKeysFor=ids=>(ids||[]).map(id=>{
+  const p=vertexNodes[id];return p?vertexKey(p.x,p.y,vertexGraphRadius):null;
+ });
+ const savedVertexPaths=vertexPaths.map(path=>({path,keys:vertexKeysFor(path.ids)}));
+ const savedVertexArrays=vertexArrays.map(arr=>({arr,keys:vertexKeysFor(arr)}));
+ const savedVertexHover={river:riverHover===null?null:vertexKeysFor([riverHover])[0],
+                         border:borderHover===null?null:vertexKeysFor([borderHover])[0]};
+ const roadPathsSaved=roadPaths.map(path=>({path,cells:(path.ids||[]).map(id=>{
+  const n=roadNodes[id];return n?[n.c,n.r]:null;
+ })}));
+ const roadArrays=[roadPreview].map(arr=>({arr,cells:arr.map(id=>{
+  const n=roadNodes[id];return n?[n.c,n.r]:null;
+ })}));
+ const roadHoverCell=roadHover===null?null:(roadNodes[roadHover]?[roadNodes[roadHover].c,roadNodes[roadHover].r]:null);
+ return ()=>{
+  for(const item of savedVertexPaths)item.path.ids=item.keys.map(k=>k===null?undefined:vertexLookup.get(k)).filter(Number.isInteger);
+  for(const item of savedVertexArrays){item.arr.length=0;for(const k of item.keys){const id=k===null?undefined:vertexLookup.get(k);if(Number.isInteger(id))item.arr.push(id);}}
+  riverHover=savedVertexHover.river===null?null:vertexLookup.get(savedVertexHover.river)??null;
+  borderHover=savedVertexHover.border===null?null:vertexLookup.get(savedVertexHover.border)??null;
+  const roadIndex=(cell)=>cell&&cell[0]<cols&&cell[1]<rows?cell[0]*rows+cell[1]:null;
+  for(const item of roadPathsSaved)item.path.ids=item.cells.map(roadIndex).filter(Number.isInteger);
+  for(const item of roadArrays){item.arr.length=0;for(const cell of item.cells){const id=roadIndex(cell);if(Number.isInteger(id))item.arr.push(id);}}
+  roadHover=roadHoverCell?roadIndex(roadHoverCell):null;
+ };
+}
+function resize(){
+  const oldGeometry=window.__hexWorldGeometry;
+  const geometryKey=[cols,rows,radius].join(':');
+  if(oldGeometry!==geometryKey){terrainChunkCache.clear();window.__hexWorldGeometry=geometryKey;}
+  const viewport=document.getElementById('mapScroll');
+  const rect=viewport.getBoundingClientRect();
+  const dpr=Math.min(devicePixelRatio||1,2);
+  const mapW=(cols-1)*1.5*radius+2*radius;
+  const mapH=(rows-1)*Math.sqrt(3)*radius+Math.sqrt(3)*radius+(cols>1?Math.sqrt(3)*radius/2:0);
+  const cssW=Math.max(rect.width,mapW+36);
+  const cssH=Math.max(rect.height,mapH+36);
+  const stack=document.getElementById('mapLayerStack');
+  const spacer=document.getElementById('mapSpacer');
+  spacer.style.width=cssW+'px';spacer.style.height=cssH+'px';
+  stack.style.width=rect.width+'px';stack.style.height=rect.height+'px';
+  stack.style.marginTop='0px';stack.style.marginBottom=(-rect.height)+'px';
+  for(const layer of [canvas,structureLayer,riverLayer,roadLayer,borderLayer]){
+    layer.style.width=rect.width+'px';layer.style.height=rect.height+'px';
+    layer.width=Math.max(1,Math.ceil(rect.width*dpr));
+    layer.height=Math.max(1,Math.ceil(rect.height*dpr));
+  }
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  structureCtx.setTransform(dpr,0,0,dpr,0,0);
+  riverCtx.setTransform(dpr,0,0,dpr,0,0);
+  roadCtx.setTransform(dpr,0,0,dpr,0,0);
+  borderCtx.setTransform(dpr,0,0,dpr,0,0);
+  terrainDpr=dpr;
+  const restoreGraphIds=remapGraphPathsBeforeResize();
+  rebuildVertexGraph();rebuildRoadGraph();
+  restoreGraphIds();
+  draw();
+}
+function chunkKey(cx,cy){return `${cx},${cy}`}
+function buildTerrainChunk(cx,cy){
+ const c0=cx*CHUNK_SIZE,r0=cy*CHUNK_SIZE,c1=Math.min(cols,c0+CHUNK_SIZE),r1=Math.min(rows,r0+CHUNK_SIZE);
+ if(c0>=cols||r0>=rows)return null;
+ let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+ for(let c=c0;c<c1;c++)for(let r=r0;r<r1;r++){
+  const p=center(c,r);minX=Math.min(minX,p.x-radius-1);maxX=Math.max(maxX,p.x+radius+1);
+  minY=Math.min(minY,p.y-radius-1);maxY=Math.max(maxY,p.y+radius+1);
+ }
+ const x=minX,y=minY,w=maxX-minX,h=maxY-minY;
+ const bitmap=document.createElement('canvas');bitmap.width=Math.max(1,Math.ceil(w*terrainDpr));bitmap.height=Math.max(1,Math.ceil(h*terrainDpr));
+ const g=bitmap.getContext('2d');g.setTransform(terrainDpr,0,0,terrainDpr,0,0);
+ for(let c=c0;c<c1;c++)for(let r=r0;r<r1;r++){
+  const p=center(c,r),px=p.x-x,py=p.y-y,tile=painted.get(key(c,r));
+  hexPath(g,px,py,radius+0.5);g.fillStyle='#a4b58c';g.fill();
+  if(tile){const im=terrainDefs[tile.type]?.images[tile.index];if(im?.complete&&im.naturalWidth){g.save();hexPath(g,px,py,radius+0.5);g.clip();g.drawImage(im,px-radius,py-radius*0.8660254,radius*2,radius*1.7320508);g.restore()}}
+  g.strokeStyle='#596b59';g.lineWidth=1.15;g.stroke();
+ }
+ const chunk={canvas:bitmap,x,y,w,h,cx,cy};
+ terrainChunkCache.set(chunkKey(cx,cy),chunk);
+ // Limita la memoria della cache: conserva i chunk recenti e quelli vicini alla viewport.
+ while(terrainChunkCache.size>20)terrainChunkCache.delete(terrainChunkCache.keys().next().value);
+ return chunk;
+}
+function mapViewport(){
+ const view=document.getElementById('mapScroll');
+ return {left:view.scrollLeft,top:view.scrollTop,right:view.scrollLeft+view.clientWidth,bottom:view.scrollTop+view.clientHeight,w:view.clientWidth,h:view.clientHeight};
+}
+function chunkIntersectsViewport(chunk,v){
+ return chunk.x+chunk.w>=v.left-1 && chunk.x<=v.right+1 && chunk.y+chunk.h>=v.top-1 && chunk.y<=v.bottom+1;
+}
+function compositeTerrainChunk(chunk){
+ if(!chunk)return;
+ const v=mapViewport(),ox=Number(canvas.dataset.ox||0),oy=Number(canvas.dataset.oy||0);
+ if(!chunkIntersectsViewport({x:chunk.x+ox,y:chunk.y+oy,w:chunk.w,h:chunk.h},v))return;
+ ctx.drawImage(chunk.canvas,chunk.x+ox-v.left,chunk.y+oy-v.top,chunk.w,chunk.h);
+}
+function drawTerrainChunks(){
+ const v=mapViewport(),ox=Number(canvas.dataset.ox||0),oy=Number(canvas.dataset.oy||0);
+ const minX=v.left-ox-CHUNK_SIZE*1.5*radius,maxX=v.right-ox+CHUNK_SIZE*1.5*radius;
+ const minY=v.top-oy-CHUNK_SIZE*Math.sqrt(3)*radius,maxY=v.bottom-oy+CHUNK_SIZE*Math.sqrt(3)*radius;
+ const cMin=Math.max(0,Math.floor((minX-radius)/(CHUNK_SIZE*1.5*radius)));
+ const cMax=Math.min(Math.ceil(cols/CHUNK_SIZE)-1,Math.floor((maxX+radius)/(CHUNK_SIZE*1.5*radius)));
+ const rMin=Math.max(0,Math.floor((minY-radius)/(CHUNK_SIZE*Math.sqrt(3)*radius)));
+ const rMax=Math.min(Math.ceil(rows/CHUNK_SIZE)-1,Math.floor((maxY+radius)/(CHUNK_SIZE*Math.sqrt(3)*radius)));
+ for(let cy=rMin;cy<=rMax;cy++)for(let cx=cMin;cx<=cMax;cx++){
+  const id=chunkKey(cx,cy),chunk=terrainChunkCache.get(id)||buildTerrainChunk(cx,cy);
+  compositeTerrainChunk(chunk);
+ }
+}
+function redrawTerrainChunks(chunkIds){
+ for(const id of chunkIds)terrainChunkCache.delete(id);
+ // Ricompone soltanto i chunk necessari alla viewport; non cancella rettangoli
+ // che possono invadere l'area grafica dei chunk confinanti.
+ draw();
+}
+function draw(){
+ const w=canvas.clientWidth,h=canvas.clientHeight,v=mapViewport();
+ ctx.setTransform(terrainDpr,0,0,terrainDpr,0,0);
+ ctx.clearRect(0,0,w,h);ctx.fillStyle='#c1c9bf';ctx.fillRect(0,0,w,h);
+ const mapW=(cols-1)*1.5*radius+2*radius;
+ const mapH=(rows-1)*Math.sqrt(3)*radius+Math.sqrt(3)*radius+(cols>1?Math.sqrt(3)*radius/2:0);
+ const ox=(Math.max(w,mapW+36)-mapW)/2,oy=(Math.max(h,mapH+36)-mapH)/2;
+ canvas.dataset.scale=1;canvas.dataset.ox=ox;canvas.dataset.oy=oy;
+ drawTerrainChunks();
+ drawStructureLayer();drawRiverLayer();drawRoadLayer();drawBorderLayer();
+}
+function drawStructureLayer(){
+ const w=structureLayer.clientWidth,h=structureLayer.clientHeight;
+ structureCtx.setTransform(terrainDpr,0,0,terrainDpr,0,0);
+ structureCtx.clearRect(0,0,w,h);
+ const view=mapViewport();
+ structureCtx.save();
+ structureCtx.translate(Number(canvas.dataset.ox||0)-view.left,Number(canvas.dataset.oy||0)-view.top);
+ for(const [cellId,featureId] of structures){
+  const match=/^(\d+),(\d+)$/.exec(cellId);if(!match)continue;
+  const c=Number(match[1]),r=Number(match[2]);if(c>=cols||r>=rows)continue;
+  const def=featureDefs.find(item=>item.id===featureId),im=def&&def.image;
+  if(!im||!im.complete||!im.naturalWidth)continue;
+  const p=center(c,r),scale=Math.min(radius*1.5/im.naturalWidth,radius*1.30/im.naturalHeight);
+  const iw=im.naturalWidth*scale,ih=im.naturalHeight*scale;
+  structureCtx.drawImage(im,p.x-iw/2,p.y-ih/2,iw,ih);
+ }
+ structureCtx.restore();
+}
+function drawTerrainCell(c,r){
+ const id=chunkKey(Math.floor(c/CHUNK_SIZE),Math.floor(r/CHUNK_SIZE));
+ redrawTerrainChunks([id]);
+}
+function vertexKey(x,y,baseRadius=radius){return Math.round((x/baseRadius)*1000000)+','+Math.round((y/baseRadius)*1000000)}
+function rebuildVertexGraph(){
+ vertexNodes=[];vertexLookup=new Map();vertexAdj=[];
+ function nodeFor(x,y){
+  const k=vertexKey(x,y);
+  if(vertexLookup.has(k))return vertexLookup.get(k);
+  const id=vertexNodes.length;vertexLookup.set(k,id);vertexNodes.push({x,y});vertexAdj.push(new Set());return id;
+ }
+ for(let c=0;c<cols;c++)for(let r=0;r<rows;r++){
+  const p=center(c,r),ids=[];
+  for(let i=0;i<6;i++){const a=Math.PI/180*(60*i);ids.push(nodeFor(p.x+radius*Math.cos(a),p.y+radius*Math.sin(a)))}
+  for(let i=0;i<6;i++){const a=ids[i],b=ids[(i+1)%6];vertexAdj[a].add(b);vertexAdj[b].add(a)}
+ }
+ vertexAdj=vertexAdj.map(s=>Array.from(s));
+ vertexGraphRadius=radius;
+}
+function nearestVertex(p){
+ let best=-1,bestD=Infinity;
+ for(let i=0;i<vertexNodes.length;i++){const v=vertexNodes[i],d=(v.x-p.x)**2+(v.y-p.y)**2;if(d<bestD){bestD=d;best=i}}
+ return best;
+}
+function shortestTree(start){
+ const parent=new Int32Array(vertexNodes.length);parent.fill(-1);
+ const queue=new Int32Array(vertexNodes.length);let head=0,tail=0;
+ queue[tail++]=start;parent[start]=start;
+ while(head<tail){const u=queue[head++];for(const v of vertexAdj[u])if(parent[v]===-1){parent[v]=u;queue[tail++]=v}}
+ return parent;
+}
+function recoverPath(parent,end){
+ if(end<0||parent[end]===-1)return [];
+ const path=[];let n=end;while(n!==parent[n]){path.push(n);n=parent[n]}path.push(n);path.reverse();return path;
+}
+function seededRandom(seed){
+ let state=(seed>>>0)||1;
+ return function(){
+  state=(state*1664525+1013904223)>>>0;
+  return state/4294967296;
+ };
+}
+function pathSeed(ids,extra=0){
+ let seed=(2166136261^extra)>>>0;
+ for(let i=0;i<ids.length;i++){
+  seed^=(ids[i]+1);seed=Math.imul(seed,16777619)>>>0;
+  seed^=(i+1)*374761393;seed=Math.imul(seed,16777619)>>>0;
+ }
+ return seed>>>0;
+}
+function smoothRandomProfile(t,values){
+ if(values.length<2)return values[0]||1;
+ const x=t*(values.length-1),i=Math.min(values.length-2,Math.floor(x)),f=x-i;
+ const eased=f*f*(3-2*f);
+ return values[i]*(1-eased)+values[i+1]*eased;
+}
+function riverCenterline(ids,seed=pathSeed(ids,71)){
+ const random=seededRandom(seed);
+ let points=[];const samplesPerEdge=12;
+ for(let i=1;i<ids.length;i++){
+  const a=vertexNodes[ids[i-1]],b=vertexNodes[ids[i]];
+  const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
+  const amplitude=radius*(.055+random()*.085)*(random()<.5?-1:1);
+  const phase=(random()-.5)*.7;
+  const frequency=1.0+random()*.65;
+  for(let j=0;j<samplesPerEdge;j++){
+   const t=j/samplesPerEdge;
+   const wave=Math.sin(Math.PI*t*frequency+phase)-Math.sin(phase)*(1-t)-Math.sin(Math.PI*frequency+phase)*t;
+   const offset=amplitude*wave;
+   points.push({x:a.x+dx*t-dy/len*offset,y:a.y+dy*t+dx/len*offset});
+  }
+ }
+ const last=vertexNodes[ids[ids.length-1]];
+ points.push({x:last.x,y:last.y});
+ for(let pass=0;pass<2;pass++){
+  if(points.length<3)break;
+  const softened=[points[0]];
+  for(let i=0;i<points.length-1;i++){
+   const a=points[i],b=points[i+1];
+   softened.push({x:a.x*.75+b.x*.25,y:a.y*.75+b.y*.25});
+   softened.push({x:a.x*.25+b.x*.75,y:a.y*.25+b.y*.75});
+  }
+  softened.push(points[points.length-1]);points=softened;
+ }
+ return points;
+}
+function riverWidthFactor(t,type,seed=1){
+ const random=seededRandom(seed^0x5f356495);
+ const count=type==='great'?9:7;
+ const profile=[];
+ for(let i=0;i<count;i++)profile.push((random()*2-1)*(type==='stream'?.055:type==='great'?.22:.13));
+ const existing=type==='stream'?0:type==='river'?.07:.12;
+ const variation=smoothRandomProfile(t,profile);
+ return Math.max(.72,1+variation+existing*Math.sin(t*Math.PI*(type==='great'?3:4)+randomPhase(seed)));
+}
+function randomPhase(seed){return ((seed>>>8)%6283)/1000;}
+
+function drawWaterShape(points,type,preview=false,seed=1,targetCtx=riverCtx){
+ if(points.length<2)return;
+ const baseWidth=type==='stream'?Math.max(3,radius*.105):
+  type==='great'?Math.max(6,radius*.29):Math.max(4,radius*.18);
+ const left=[],right=[];
+ for(let i=0;i<points.length;i++){
+  const prev=points[Math.max(0,i-1)],next=points[Math.min(points.length-1,i+1)];
+  const dx=next.x-prev.x,dy=next.y-prev.y,len=Math.hypot(dx,dy)||1;
+  const t=i/Math.max(1,points.length-1),half=baseWidth*riverWidthFactor(t,type,seed)/2;
+  const nx=-dy/len,ny=dx/len;
+  left.push({x:points[i].x+nx*half,y:points[i].y+ny*half});
+  right.push({x:points[i].x-nx*half,y:points[i].y-ny*half});
+ }
+ targetCtx.beginPath();targetCtx.moveTo(left[0].x,left[0].y);
+ for(let i=1;i<left.length;i++)targetCtx.lineTo(left[i].x,left[i].y);
+ for(let i=right.length-1;i>=0;i--)targetCtx.lineTo(right[i].x,right[i].y);
+ targetCtx.closePath();
+ const waterColors={stream:'#55A9C8',river:'#278FC9',great:'#17658F'};
+ targetCtx.fillStyle=preview?'#279de0':(waterColors[type]||waterColors.river);
+ targetCtx.fill();
+
+ // Estremità leggermente più piene e arrotondate: i tratti che ripartono
+ // dallo stesso vertice si sovrappongono senza lasciare fessure visibili.
+ if(type==='great'){
+  const capRadius=(pointIndex)=>{
+   const t=pointIndex/Math.max(1,points.length-1);
+   return baseWidth*riverWidthFactor(t,type,seed)*0.62;
+  };
+  for(const index of [0,points.length-1]){
+   const point=points[index];
+   targetCtx.beginPath();
+   targetCtx.arc(point.x,point.y,capRadius(index),0,Math.PI*2);
+   targetCtx.fill();
+  }
+ }
+ return {left,right};
+}
+
+function drawRiverPath(path,preview=false,targetCtx=riverCtx){
+ const ids=Array.isArray(path)?path:path.ids;
+ const type=Array.isArray(path)?'river':(path.type||'river');
+ const seed=Array.isArray(path)?pathSeed(ids,71):(path.seed??pathSeed(ids,71));
+ if(!ids||ids.length<2)return;
+ const points=riverCenterline(ids,seed);
+ drawWaterShape(points,type,preview,seed,targetCtx);
+}
+function drawRiverLayer(){
+ if(!riverCtx||!riverLayer.width)return;
+ const w=riverLayer.clientWidth,h=riverLayer.clientHeight;riverCtx.setTransform(terrainDpr,0,0,terrainDpr,0,0);
+ riverCtx.clearRect(0,0,w,h);
+ const view=mapViewport();
+ riverCtx.save();riverCtx.translate(Number(canvas.dataset.ox||0)-view.left,Number(canvas.dataset.oy||0)-view.top);
+ for(const path of riverPaths)drawRiverPath(path,false);
+ if(riverPreview.length>1)drawRiverPath({ids:riverPreview,type:waterType,seed:riverCurrentSeed},true);
+ const markers=riverPreview.length
+  ? [vertexNodes[riverPreview[0]],vertexNodes[riverPreview[riverPreview.length-1]]]
+  : (riverHover!==null&&vertexNodes[riverHover]?[vertexNodes[riverHover]]:[]);
+ for(const v of markers){
+  riverCtx.beginPath();riverCtx.arc(v.x,v.y,Math.max(4,radius*.09),0,Math.PI*2);
+  riverCtx.fillStyle='#168ee0';riverCtx.fill();riverCtx.lineWidth=1.5;
+  riverCtx.strokeStyle='#e8f6ff';riverCtx.stroke();
+ }
+ riverCtx.restore();
+}
+
+function rebuildRoadGraph(){
+ roadNodes=[];roadAdj=[];
+ for(let c=0;c<cols;c++)for(let r=0;r<rows;r++){
+  const p=center(c,r);roadNodes.push({c,r,x:p.x,y:p.y});roadAdj.push([]);
+ }
+ const idx=(c,r)=>c*rows+r;
+ for(let c=0;c<cols;c++)for(let r=0;r<rows;r++){
+  const neighbors=[[c,r-1],[c,r+1]];
+  if(c%2===0)neighbors.push([c-1,r-1],[c-1,r],[c+1,r-1],[c+1,r]);
+  else neighbors.push([c-1,r],[c-1,r+1],[c+1,r],[c+1,r+1]);
+  const u=idx(c,r);
+  for(const [nc,nr] of neighbors)if(nc>=0&&nc<cols&&nr>=0&&nr<rows)roadAdj[u].push(idx(nc,nr));
+ }
+}
+function nearestRoadNode(p){
+ let best=0,bestD=Infinity;
+ for(let i=0;i<roadNodes.length;i++){const n=roadNodes[i],d=(n.x-p.x)**2+(n.y-p.y)**2;if(d<bestD){bestD=d;best=i}}
+ return best;
+}
+function shortestRoadTree(start){
+ const parent=new Int32Array(roadNodes.length);parent.fill(-1);
+ const queue=new Int32Array(roadNodes.length);let head=0,tail=0;
+ queue[tail++]=start;parent[start]=start;
+ while(head<tail){const u=queue[head++];for(const v of roadAdj[u])if(parent[v]===-1){parent[v]=u;queue[tail++]=v}}
+ return parent;
+}
+function recoverRoadPath(parent,end){
+ if(end<0||parent[end]===-1)return [];
+ const path=[];let n=end;while(n!==parent[n]){path.push(n);n=parent[n]}path.push(n);path.reverse();return path;
+}
+function drawRoadPath(path,targetCtx=roadCtx){
+ const ids=Array.isArray(path)?path:path.ids;
+ const type=Array.isArray(path)?'road':(path.type||'road');
+ const seed=Array.isArray(path)?pathSeed(ids,193):(path.seed??pathSeed(ids,193));
+ if(!ids||ids.length<2)return;
+ const random=seededRandom(seed),pts=ids.map(id=>roadNodes[id]),smooth=[];
+ const samplesPerEdge=8;
+ const wiggleScale=type==='trail'?.155:type==='highway'?.075:.12;
+ const baseWidth=type==='trail'?Math.max(1.5,radius*.058):
+  type==='highway'?Math.max(3,radius*.165):Math.max(2,radius*.105);
+ const widthNoise=[];
+ for(let i=0;i<9;i++)widthNoise.push(1+(random()-.5)*(type==='highway'?.035:.045));
+ for(let i=1;i<pts.length;i++){
+  const a=pts[i-1],b=pts[i],dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
+  const amplitude=radius*wiggleScale*(.65+random()*.7)*(random()<.5?-1:1);
+  const phase=(random()-.5)*.55,frequency=.9+random()*.55;
+  for(let j=0;j<samplesPerEdge;j++){
+   const t=j/samplesPerEdge;
+   const wave=Math.sin(Math.PI*t*frequency+phase)-Math.sin(phase)*(1-t)-Math.sin(Math.PI*frequency+phase)*t;
+   const offset=amplitude*wave;
+   smooth.push({x:a.x+dx*t-dy/len*offset,y:a.y+dy*t+dx/len*offset});
+  }
+ }
+ smooth.push(pts[pts.length-1]);
+ const left=[],right=[];
+ for(let i=0;i<smooth.length;i++){
+  const prev=smooth[Math.max(0,i-1)],next=smooth[Math.min(smooth.length-1,i+1)];
+  const dx=next.x-prev.x,dy=next.y-prev.y,len=Math.hypot(dx,dy)||1;
+  const t=i/Math.max(1,smooth.length-1),half=baseWidth*smoothRandomProfile(t,widthNoise)/2;
+  const nx=-dy/len,ny=dx/len;
+  left.push({x:smooth[i].x+nx*half,y:smooth[i].y+ny*half});
+  right.push({x:smooth[i].x-nx*half,y:smooth[i].y-ny*half});
+ }
+ const colors={trail:'#918F82',road:'#68452F',highway:'#A66B3F'};
+ targetCtx.fillStyle=colors[type]||colors.road;
+ function traceSoftSide(points){
+  if(!points.length)return;
+  targetCtx.lineTo(points[0].x,points[0].y);
+  for(let i=1;i<points.length;i++){
+   const a=points[i-1],b=points[i];
+   const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+   targetCtx.quadraticCurveTo(a.x,a.y,mx,my);
+  }
+  const last=points[points.length-1];
+  targetCtx.lineTo(last.x,last.y);
+ }
+ targetCtx.beginPath();
+ targetCtx.moveTo(left[0].x,left[0].y);
+ traceSoftSide(left.slice(1));
+ const reversed=right.slice().reverse();
+ traceSoftSide(reversed);
+ targetCtx.closePath();
+ targetCtx.fill();
+ // Cap tondi dello stesso colore e proporzionati al tipo di percorso.
+ const capRadiusStart=baseWidth*widthNoise[0]/2;
+ const capRadiusEnd=baseWidth*widthNoise[widthNoise.length-1]/2;
+ targetCtx.beginPath();
+ targetCtx.arc(smooth[0].x,smooth[0].y,capRadiusStart,0,Math.PI*2);
+ targetCtx.arc(smooth[smooth.length-1].x,smooth[smooth.length-1].y,capRadiusEnd,0,Math.PI*2);
+ targetCtx.fill();
+}
+function drawRoadLayer(){
+ if(!roadCtx||!roadLayer.width)return;
+ const w=roadLayer.clientWidth,h=roadLayer.clientHeight;roadCtx.setTransform(terrainDpr,0,0,terrainDpr,0,0);
+ roadCtx.clearRect(0,0,w,h);
+ const view=mapViewport();
+ roadCtx.save();roadCtx.translate(Number(canvas.dataset.ox||0)-view.left,Number(canvas.dataset.oy||0)-view.top);
+ for(const path of roadPaths)drawRoadPath(path);
+ if(roadPreview.length>1)drawRoadPath({ids:roadPreview,type:roadType,seed:roadCurrentSeed});
+
+ const markers=roadPreview.length?[roadNodes[roadPreview[0]],roadNodes[roadPreview[roadPreview.length-1]]]:
+  (roadHover!==null&&roadNodes[roadHover]?[roadNodes[roadHover]]:[]);
+ const markerColors={trail:'#918F82',road:'#68452F',highway:'#A66B3F'};
+ const markerWidth=roadType==='trail'?Math.max(1.5,radius*.058):
+  roadType==='highway'?Math.max(3,radius*.165):Math.max(2,radius*.105);
+ for(const n of markers){
+  roadCtx.beginPath();roadCtx.arc(n.x,n.y,markerWidth*.52,0,Math.PI*2);
+  roadCtx.fillStyle=markerColors[roadType]||markerColors.road;roadCtx.fill();
+ }
+ roadCtx.restore();
+}
+
+
+function drawBorderPath(path,targetCtx=borderCtx){
+ const ids=path.ids;if(!ids||ids.length<2)return;
+ const colors={province:'#D6C58A',region:'#E6A34C',state:'#D66B68'};
+ // Il tratto colorato resta leggibile a tre livelli; il casing scuro separa
+ // il confine dal terreno senza coprire completamente fiumi e strade sottostanti.
+ const widths={province:3.5,region:4.5,state:5.5};
+ const dash=20,gap=20,period=dash+gap;
+ const points=ids.map(id=>vertexNodes[id]);
+ targetCtx.save();
+ targetCtx.lineCap='butt';targetCtx.lineJoin='miter';
+ // Disegna il tratteggio manualmente mantenendo la fase lungo l'intero percorso,
+ // anche quando cambia la direzione tra due lati esagonali.
+ let distance=0;
+ for(let i=1;i<points.length;i++){
+  const a=points[i-1],b=points[i],dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy);
+  if(!len)continue;
+  let pos=0;
+  while(pos<len){
+   const phase=(distance+pos)%period;
+   const drawing=phase<dash;
+   const step=Math.min(len-pos,drawing?dash-phase:period-phase);
+   if(drawing&&step>0){
+    const t0=pos/len,t1=(pos+step)/len;
+    const x0=a.x+dx*t0,y0=a.y+dy*t0,x1=a.x+dx*t1,y1=a.y+dy*t1;
+    // Contorno esterno: più largo, scuro e trasparente.
+    targetCtx.globalAlpha=.42;
+    targetCtx.strokeStyle='#172019';
+    targetCtx.lineWidth=(widths[path.type]||3.5)+3.5;
+    targetCtx.beginPath();targetCtx.moveTo(x0,y0);targetCtx.lineTo(x1,y1);targetCtx.stroke();
+    // Nucleo colorato: mantiene distinguibile la gerarchia amministrativa.
+    targetCtx.globalAlpha=.76;
+    targetCtx.strokeStyle=colors[path.type]||colors.province;
+    targetCtx.lineWidth=widths[path.type]||3.5;
+    targetCtx.beginPath();targetCtx.moveTo(x0,y0);targetCtx.lineTo(x1,y1);targetCtx.stroke();
+   }
+   pos+=Math.max(step,0.0001);
+  }
+  distance+=len;
+ }
+ targetCtx.restore();
+}
+function drawBorderLayer(){
+ if(!borderCtx||!borderLayer.width)return;
+ const w=borderLayer.clientWidth,h=borderLayer.clientHeight;borderCtx.setTransform(terrainDpr,0,0,terrainDpr,0,0);
+ borderCtx.clearRect(0,0,w,h);
+ const view=mapViewport();
+ borderCtx.save();borderCtx.translate(Number(canvas.dataset.ox||0)-view.left,Number(canvas.dataset.oy||0)-view.top);
+ for(const path of borderPaths)drawBorderPath(path);
+ if(borderPreview.length>1)drawBorderPath({ids:borderPreview,type:borderType});
+ const v=borderPreview.length?[vertexNodes[borderPreview[0]],vertexNodes[borderPreview[borderPreview.length-1]]]:
+  (borderHover!==null&&vertexNodes[borderHover]?[vertexNodes[borderHover]]:[]);
+ if(v.length){
+  borderCtx.globalAlpha=.75;borderCtx.fillStyle=({province:'#D6C58A',region:'#E6A34C',state:'#D66B68'})[borderType]||'#E6A34C';
+  for(const p of v){borderCtx.beginPath();borderCtx.arc(p.x,p.y,Math.max(3,radius*.055),0,Math.PI*2);borderCtx.fill();}
+ }
+ borderCtx.restore();
+}
+
+function drawThumb(canvas,im){if(!im?.complete||!im.naturalWidth)return;const g=canvas.getContext('2d');g.clearRect(0,0,canvas.width,canvas.height);hexPath(g,canvas.width/2,canvas.height/2,Math.min(canvas.width*.43,canvas.height*.46));g.clip();g.drawImage(im,canvas.width*.08,canvas.height*.08,canvas.width*.84,canvas.height*.84)}
+
+function renderPalette(){
+ const body=document.getElementById('paletteBody'),footer=document.getElementById('paletteFooter');
+ body.innerHTML='';footer.innerHTML='';
+ for(const type of ['bushes','clear','desert','dunes','forest','grass','hills','ice','jungle','mountains','mud','ocean','pineTrees','rough','snow']){
+  const def=terrainDefs[type];
+  const card=document.createElement('button');
+  card.className='terrain'+(activeTerrain===type?' active':'');
+  card.type='button';
+  const icon=document.createElement('canvas');
+  icon.className='terrain-icon';icon.width=100;icon.height=100;
+  drawThumb(icon,def.images[0]);
+  const label=document.createElement('span');
+  label.textContent=def.label;
+  card.append(icon,label);
+  card.onclick=()=>{
+   deactivateDrawingTools();activeTerrain=type;erase=false;selectedFeature=null;
+   document.getElementById('erase').classList.remove('active');
+   renderPalette();
+  };
+  body.appendChild(card);
+ }
+}
+
+function renderFeaturePalette(){
+ const grid=document.getElementById('featureGrid');if(!grid)return;
+ grid.innerHTML='';
+ for(const def of featureDefs){
+  const button=document.createElement('button');
+  button.type='button';
+  button.className='feature-tool'+(selectedFeature===def.id?' active':'');
+  button.setAttribute('aria-pressed',String(selectedFeature===def.id));
+  const icon=document.createElement('img');icon.src=def.file;icon.alt='';
+  const label=document.createElement('span');label.textContent=def.label;
+  button.append(icon,label);
+  button.addEventListener('click',()=>{
+   deactivateDrawingTools();erase=false;
+   document.getElementById('erase').classList.remove('active');
+   selectedFeature=selectedFeature===def.id?null:def.id;
+   renderFeaturePalette();
+   status.textContent=selectedFeature?'Selezionato: '+def.label+' — clicca un esagono':'Selezione struttura annullata';
+  });
+  grid.appendChild(button);
+ }
+}
+function mapPoint(e){
+ const rect=document.getElementById('mapScroll').getBoundingClientRect(),s=Number(canvas.dataset.scale||1),
+ ox=Number(canvas.dataset.ox||0),oy=Number(canvas.dataset.oy||0);
+ const view=mapViewport();
+ return {x:(e.clientX-rect.left+view.left-ox)/s,y:(e.clientY-rect.top+view.top-oy)/s};
+}
+function cellAt(x,y){
+ let best=null,dist=Infinity;
+ for(let c=0;c<cols;c++){
+  const rr=Math.round((y-Math.sqrt(3)*radius/2-(c%2)*Math.sqrt(3)*radius/2)/(Math.sqrt(3)*radius));
+  for(let r=Math.max(0,rr-1);r<=Math.min(rows-1,rr+1);r++){
+   const p=center(c,r),d=Math.hypot(x-p.x,y-p.y);
+   if(d<dist){dist=d;best=[c,r]}
+  }
+ }
+ return best&&dist<radius?best:null;
+}
+function applyBrush(cell){
+ if(!cell)return false;
+ const k=key(...cell);
+ if(erase){painted.delete(k);structures.delete(k);}else painted.set(k,{type:activeTerrain,index:0});
+ return true;
+}
+let painting=false,lastPoint=null,lastCell=null;
+function paintSegment(a,b){
+ const distance=Math.hypot(b.x-a.x,b.y-a.y);
+ const steps=Math.max(1,Math.ceil(distance/Math.max(3,radius*0.28)));
+ let changed=false,structureChanged=false;const dirtyChunks=new Set();
+ for(let i=0;i<=steps;i++){
+  const t=i/steps,x=a.x+(b.x-a.x)*t,y=a.y+(b.y-a.y)*t;
+  const cell=cellAt(x,y),id=cell?key(...cell):null;
+  if(!id||id===lastCell)continue;
+  lastCell=id;
+  if(erase&&structures.has(id))structureChanged=true;
+  if(applyBrush(cell)){dirtyChunks.add(chunkKey(Math.floor(cell[0]/CHUNK_SIZE),Math.floor(cell[1]/CHUNK_SIZE)));changed=true;}
+ }
+ if(dirtyChunks.size)redrawTerrainChunks(dirtyChunks);
+ if(structureChanged)drawStructureLayer();
+ if(changed)status.textContent=erase?'Cancellazione in corso':terrainDefs[activeTerrain].label;
+}
+function stopPainting(){painting=false;lastPoint=null;lastCell=null;}
+
+canvas.addEventListener('pointerdown',e=>{
+ if(e.button!==0)return;
+ e.preventDefault();
+ if(selectedFeature!==null){
+  const cell=cellAt(...Object.values(mapPoint(e)));
+  if(!cell){status.textContent='Punto esterno alla griglia';return;}
+  const def=featureDefs.find(item=>item.id===selectedFeature);
+  if(!def||!def.image||!def.image.complete||!def.image.naturalWidth){
+   status.textContent='Immagine struttura non disponibile: '+(def?def.label:selectedFeature);
+   return;
+  }
+  structures.set(key(cell[0],cell[1]),selectedFeature);
+  drawStructureLayer();
+  status.textContent=(def.label||'Struttura')+' posizionata';
+  return;
+ }
+ if(erase){
+  painting=true;lastPoint=mapPoint(e);lastCell=null;
+  canvas.setPointerCapture(e.pointerId);
+  paintSegment(lastPoint,lastPoint);
+  return;
+ }
+ painting=true;lastPoint=mapPoint(e);lastCell=null;
+ canvas.setPointerCapture(e.pointerId);
+ paintSegment(lastPoint,lastPoint);
+});
+canvas.addEventListener('pointermove',e=>{
+ if(!painting)return;
+ const p=mapPoint(e);paintSegment(lastPoint,p);lastPoint=p;
+});
+canvas.addEventListener('pointerup',stopPainting);
+canvas.addEventListener('pointercancel',stopPainting);
+canvas.addEventListener('lostpointercapture',stopPainting);
+document.getElementById('erase').onclick=()=>{deactivateDrawingTools();selectedFeature=null;renderFeaturePalette();erase=true;document.getElementById('erase').classList.add('active')};document.getElementById('reset').onclick=()=>{painted.clear();structures.clear();draw();status.textContent='Mappa azzerata'};
+function bind(id,fn){const el=document.getElementById(id),out=document.getElementById(id+'Out');el.addEventListener('input',()=>{fn(+el.value);out.textContent=el.value+(id==='radius'?' px':'');resize()})}bind('radius',v=>radius=v);bind('cols',v=>cols=v);bind('rows',v=>rows=v);
+
+ // Selezione diretta delle sei modalità dalla scheda Linee.
+ const waterTool=document.getElementById('waterTool'),roadButton=document.getElementById('roadTool'),mapScrollEl=document.getElementById('mapScroll');
+ const lineToolButtons=Array.from(document.querySelectorAll('.line-tool'));
+
+
+
+ // Panoramica modale dell'intera mappa.
+ const overviewButton=document.getElementById('overviewButton');
+ const overviewBackdrop=document.getElementById('overviewBackdrop');
+ const overviewDialog=document.getElementById('overviewDialog');
+ const overviewCanvas=document.getElementById('overviewCanvas');
+ const overviewCtx=overviewCanvas.getContext('2d');
+ let overviewScale=1,overviewMapW=0,overviewMapH=0,overviewViewW=0,overviewViewH=0;
+ let overviewRect={x:0,y:0,w:0,h:0};
+ function drawOverviewMapLayers(w,h){
+  const mapW=overviewMapW,mapH=overviewMapH,view=mapScrollEl;
+  const full=document.createElement('canvas');full.width=Math.max(1,Math.ceil(mapW));full.height=Math.max(1,Math.ceil(mapH));
+  const g=full.getContext('2d');g.fillStyle='#c1c9bf';g.fillRect(0,0,mapW,mapH);
+  for(let cy=0;cy<Math.ceil(rows/CHUNK_SIZE);cy++)for(let cx=0;cx<Math.ceil(cols/CHUNK_SIZE);cx++){
+   const chunk=terrainChunkCache.get(chunkKey(cx,cy))||buildTerrainChunk(cx,cy);
+   if(chunk)g.drawImage(chunk.canvas,chunk.x+Number(canvas.dataset.ox||0),chunk.y+Number(canvas.dataset.oy||0),chunk.w,chunk.h);
+  }
+  overviewCtx.drawImage(full,0,0,mapW,mapH,0,0,w,h);
+  // Vettori: le superfici visibili sono riportate nella loro posizione geografica corrente.
+  for(const layer of [structureLayer,riverLayer,roadLayer,borderLayer]){
+   if(!layer.width)continue;
+   overviewCtx.drawImage(layer,0,0,layer.width,layer.height,
+    view.scrollLeft,view.scrollTop,view.clientWidth,view.clientHeight);
+  }
+ }
+ function drawOverview(){
+  const layers=[canvas,structureLayer,riverLayer,roadLayer,borderLayer];
+  const view=mapScrollEl;
+  overviewMapW=parseFloat(document.getElementById('mapSpacer').style.width)||canvas.clientWidth;
+  overviewMapH=parseFloat(document.getElementById('mapSpacer').style.height)||canvas.clientHeight;
+  const maxW=Math.max(200,overviewDialog.clientWidth-28);
+  const maxH=Math.max(150,overviewDialog.clientHeight-62);
+  overviewScale=Math.min(maxW/overviewMapW,maxH/overviewMapH);
+  const w=Math.max(1,Math.round(overviewMapW*overviewScale));
+  const h=Math.max(1,Math.round(overviewMapH*overviewScale));
+  overviewCanvas.width=w;overviewCanvas.height=h;
+  overviewCanvas.style.width=w+'px';overviewCanvas.style.height=h+'px';
+  overviewCtx.clearRect(0,0,w,h);
+  overviewCtx.fillStyle='#c1c9bf';overviewCtx.fillRect(0,0,w,h);
+  drawOverviewMapLayers(w,h);
+  overviewViewW=Math.min(w,view.clientWidth/overviewMapW*w);
+  overviewViewH=Math.min(h,view.clientHeight/overviewMapH*h);
+  overviewRect.w=overviewViewW;overviewRect.h=overviewViewH;
+  overviewRect.x=Math.max(0,Math.min(w-overviewViewW,view.scrollLeft/overviewMapW*w));
+  overviewRect.y=Math.max(0,Math.min(h-overviewViewH,view.scrollTop/overviewMapH*h));
+  paintOverviewViewport();
+ }
+ function paintOverviewViewport(){
+  // Ridisegna solo il riquadro, mantenendo intatta l'immagine di fondo.
+  overviewCtx.save();
+  overviewCtx.fillStyle='rgba(225,25,25,.13)';
+  overviewCtx.fillRect(overviewRect.x,overviewRect.y,overviewRect.w,overviewRect.h);
+  overviewCtx.strokeStyle='#f01818';overviewCtx.lineWidth=3;
+  overviewCtx.strokeRect(overviewRect.x,overviewRect.y,overviewRect.w,overviewRect.h);
+  overviewCtx.strokeStyle='#ffe34d';overviewCtx.lineWidth=1.5;
+  overviewCtx.strokeRect(overviewRect.x+1.5,overviewRect.y+1.5,Math.max(0,overviewRect.w-3),Math.max(0,overviewRect.h-3));
+  overviewCtx.restore();
+ }
+ function moveOverviewViewport(e){
+  const rect=overviewCanvas.getBoundingClientRect();
+  const px=Math.max(0,Math.min(overviewCanvas.width,(e.clientX-rect.left)*overviewCanvas.width/rect.width));
+  const py=Math.max(0,Math.min(overviewCanvas.height,(e.clientY-rect.top)*overviewCanvas.height/rect.height));
+  overviewRect.x=Math.max(0,Math.min(overviewCanvas.width-overviewRect.w,px-overviewRect.w/2));
+  overviewRect.y=Math.max(0,Math.min(overviewCanvas.height-overviewRect.h,py-overviewRect.h/2));
+  drawOverviewBaseOnly();
+  paintOverviewViewport();
+ }
+ function drawOverviewBaseOnly(){
+  const layers=[canvas,structureLayer,riverLayer,roadLayer,borderLayer];
+  const w=overviewCanvas.width,h=overviewCanvas.height;
+  overviewCtx.clearRect(0,0,w,h);overviewCtx.fillStyle='#c1c9bf';overviewCtx.fillRect(0,0,w,h);
+  drawOverviewMapLayers(w,h);
+ }
+ function commitOverviewPosition(){
+  const view=mapScrollEl;
+  view.scrollLeft=overviewRect.x/overviewCanvas.width*overviewMapW;
+  view.scrollTop=overviewRect.y/overviewCanvas.height*overviewMapH;
+  overviewBackdrop.hidden=true;
+ }
+ function openOverview(){
+  overviewBackdrop.hidden=false;
+  drawOverview();
+  overviewDialog.focus?.();
+ }
+ overviewButton.addEventListener('click',openOverview);
+ overviewCanvas.addEventListener('pointermove',moveOverviewViewport);
+ overviewDialog.addEventListener('click',e=>{
+  if(e.target===overviewCanvas||e.target===overviewDialog||e.target.id==='overviewHeading'){
+   if(e.target===overviewCanvas)moveOverviewViewport(e);
+   commitOverviewPosition();
+  }
+ });
+ overviewBackdrop.addEventListener('click',e=>{
+  if(e.target===overviewBackdrop)commitOverviewPosition();
+ });
+ document.addEventListener('keydown',e=>{
+  if(overviewBackdrop.hidden)return;
+  if(e.key==='Escape'||e.code==='Space'){
+   e.preventDefault();overviewBackdrop.hidden=true;
+  }
+ });
+
+ let riverParent=null,roadParent=null;
+ const waterModes=['none','stream','river','great'];
+ const waterLabels={none:'Disattivato',stream:'Torrente',river:'Fiume',great:'Grande fiume'};
+ const roadModes=['none','trail','road','highway'];
+ const roadLabels={none:'Disattivata',trail:'Sentiero',road:'Strada',highway:'Grande arteria'};
+ function updateLineToolSelection(){
+  lineToolButtons.forEach(button=>{
+   const selected=button.dataset.mode===waterType||button.dataset.mode===roadType||button.dataset.mode===borderType;
+   button.classList.toggle('active',selected);
+   button.setAttribute('aria-pressed',String(selected));
+  });
+ }
+ function setWaterMode(type){
+  if(selectedFeature!==null){selectedFeature=null;renderFeaturePalette();}
+  waterType=type;riverMode=type!=='none';
+  mapScrollEl.classList.toggle('river-mode',riverMode);
+  if(riverMode){
+   roadMode=false;roadType='none';mapScrollEl.classList.remove('road-mode');
+  }
+  riverStart=null;riverParent=null;riverPreview=[];riverHover=null;
+  borderMode=false;borderType='none';borderStart=null;borderParent=null;borderPreview=[];borderHover=null;mapScrollEl.classList.remove('border-mode');
+  updateLineToolSelection();drawRiverLayer();drawRoadLayer();drawBorderLayer();
+ }
+ function setRoadMode(type){
+  if(selectedFeature!==null){selectedFeature=null;renderFeaturePalette();}
+  roadType=type;roadMode=type!=='none';
+  mapScrollEl.classList.toggle('road-mode',roadMode);
+  if(roadMode){
+   waterType='none';riverMode=false;mapScrollEl.classList.remove('river-mode');
+  }
+  roadStart=null;roadParent=null;roadPreview=[];roadHover=null;
+  borderMode=false;borderType='none';borderStart=null;borderParent=null;borderPreview=[];borderHover=null;mapScrollEl.classList.remove('border-mode');
+  updateLineToolSelection();drawRiverLayer();drawRoadLayer();drawBorderLayer();
+ }
+ function setBorderMode(type){
+  if(selectedFeature!==null){selectedFeature=null;renderFeaturePalette();}
+  borderType=type;borderMode=type!=='none';mapScrollEl.classList.toggle('border-mode',borderMode);
+  if(borderMode){waterType='none';riverMode=false;roadType='none';roadMode=false;mapScrollEl.classList.remove('river-mode','road-mode');}
+  borderStart=null;borderParent=null;borderPreview=[];borderHover=null;
+  updateLineToolSelection();drawRiverLayer();drawRoadLayer();drawBorderLayer();
+ }
+ updateLineToolSelection();
+ lineToolButtons.forEach(button=>button.addEventListener('click',()=>{
+  const mode=button.dataset.mode;
+  if(['stream','river','great'].includes(mode)){
+   setWaterMode(waterType===mode?'none':mode);
+   status.textContent=riverMode?waterLabels[waterType]+': trascina da un vertice a un altro':'Modalità terreno';
+  }else if(['province','region','state'].includes(mode)){
+   setBorderMode(borderType===mode?'none':mode);
+   const labels={province:'Confine provinciale',region:'Confine regionale',state:'Confine statale'};
+   status.textContent=borderMode?labels[borderType]+': trascina da un vertice a un altro':'Modalità terreno';
+  }else{
+   setRoadMode(roadType===mode?'none':mode);
+   status.textContent=roadMode?roadLabels[roadType]+': trascina da un centro esagonale a un altro':'Modalità terreno';
+  }
+ }));
+ function deactivateDrawingTools(){
+  if(riverMode)setWaterMode('none');
+  if(roadMode)setRoadMode('none');
+  if(borderMode)setBorderMode('none');
+ }
+ riverLayer.addEventListener('pointerdown',e=>{
+  if(!riverMode||e.button!==0)return;e.preventDefault();riverStart=nearestVertex(mapPoint(e));riverParent=shortestTree(riverStart);riverCurrentSeed=(Math.random()*4294967296)>>>0;
+  riverPreview=[riverStart];riverLayer.setPointerCapture(e.pointerId);drawRiverLayer();
+ });
+ riverLayer.addEventListener('pointermove',e=>{
+  if(!riverMode)return;const target=nearestVertex(mapPoint(e));
+  if(riverStart===null){riverHover=target;drawRiverLayer();return}
+  riverPreview=recoverPath(riverParent,target);drawRiverLayer();
+ });
+ riverLayer.addEventListener('pointerleave',()=>{if(riverStart===null){riverHover=null;drawRiverLayer()}});
+ function finishRiver(){
+  if(riverStart!==null&&riverPreview.length>1)riverPaths.push({ids:riverPreview.slice(),type:waterType,seed:(Math.random()*4294967296)>>>0});
+  riverStart=null;riverParent=null;riverPreview=[];drawRiverLayer();
+ }
+ riverLayer.addEventListener('pointerup',finishRiver);riverLayer.addEventListener('pointercancel',finishRiver);riverLayer.addEventListener('lostpointercapture',finishRiver);
+
+ borderLayer.addEventListener('pointerdown',e=>{
+  if(!borderMode||e.button!==0)return;e.preventDefault();
+  borderStart=nearestVertex(mapPoint(e));borderParent=shortestTree(borderStart);
+  borderPreview=[borderStart];borderLayer.setPointerCapture(e.pointerId);drawBorderLayer();
+ });
+ borderLayer.addEventListener('pointermove',e=>{
+  if(!borderMode)return;const target=nearestVertex(mapPoint(e));
+  if(borderStart===null){borderHover=target;drawBorderLayer();return;}
+  borderPreview=recoverPath(borderParent,target);drawBorderLayer();
+ });
+ borderLayer.addEventListener('pointerleave',()=>{if(borderStart===null){borderHover=null;drawBorderLayer();}});
+ function finishBorder(){
+  if(borderStart!==null&&borderPreview.length>1)borderPaths.push({ids:borderPreview.slice(),type:borderType});
+  borderStart=null;borderParent=null;borderPreview=[];drawBorderLayer();
+ }
+ borderLayer.addEventListener('pointerup',finishBorder);
+ borderLayer.addEventListener('pointercancel',finishBorder);
+ borderLayer.addEventListener('lostpointercapture',finishBorder);
+ roadLayer.addEventListener('pointerdown',e=>{
+  if(!roadMode||e.button!==0)return;e.preventDefault();roadStart=nearestRoadNode(mapPoint(e));roadParent=shortestRoadTree(roadStart);roadCurrentSeed=(Math.random()*4294967296)>>>0;
+  roadPreview=[roadStart];roadLayer.setPointerCapture(e.pointerId);drawRoadLayer();
+ });
+ roadLayer.addEventListener('pointermove',e=>{
+  if(!roadMode)return;const target=nearestRoadNode(mapPoint(e));
+  if(roadStart===null){roadHover=target;drawRoadLayer();return}
+  roadPreview=recoverRoadPath(roadParent,target);drawRoadLayer();
+ });
+ roadLayer.addEventListener('pointerleave',()=>{if(roadStart===null){roadHover=null;drawRoadLayer()}});
+ function finishRoad(){if(roadStart!==null&&roadPreview.length>1)roadPaths.push({ids:roadPreview.slice(),type:roadType,seed:roadCurrentSeed});roadStart=null;roadParent=null;roadPreview=[];drawRoadLayer();}
+ roadLayer.addEventListener('pointerup',finishRoad);roadLayer.addEventListener('pointercancel',finishRoad);roadLayer.addEventListener('lostpointercapture',finishRoad);
+
+ // Salvataggio e caricamento dei progetti JSON.
+ function projectData(){
+  return {
+   format:'hex-map-editor',
+   version:1,
+   settings:{radius,cols,rows,activeTerrain},
+   painted:Array.from(painted.entries()),
+   structures:Array.from(structures.entries()),
+   rivers:riverPaths.map(path=>({ids:path.ids.slice(),type:path.type,seed:path.seed})),
+   roads:roadPaths.map(path=>({ids:path.ids.slice(),type:path.type,seed:path.seed})),
+   borders:borderPaths.map(path=>({ids:path.ids.slice(),type:path.type}))
+  };
+ }
+ function downloadBlob(blob,filename){
+  const url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+ }
+ document.getElementById('saveJson').addEventListener('click',()=>{
+  const data=JSON.stringify(projectData(),null,2);
+  downloadBlob(new Blob([data],{type:'application/json'}),'hex-map.json');
+  status.textContent='Progetto JSON salvato';
+ });
+ const jsonFile=document.getElementById('jsonFile');
+ document.getElementById('openJson').addEventListener('click',()=>jsonFile.click());
+ jsonFile.addEventListener('change',()=>{
+  const file=jsonFile.files&&jsonFile.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+   try{
+    const data=JSON.parse(String(reader.result));
+    if(!data||data.format!=='hex-map-editor'||data.version!==1)throw new Error('Formato o versione del file non riconosciuti.');
+    const s=data.settings||{};
+    const newRadius=Math.max(24,Math.min(100,Math.round(Number(s.radius)||42)));
+    const newCols=Math.max(8,Math.min(80,Math.round(Number(s.cols)||24)));
+    const newRows=Math.max(6,Math.min(50,Math.round(Number(s.rows)||16)));
+    const newActive=terrainDefs[s.activeTerrain]?s.activeTerrain:'bushes';
+
+    radius=newRadius;cols=newCols;rows=newRows;activeTerrain=newActive;erase=false;
+    document.getElementById('radius').value=radius;
+    document.getElementById('cols').value=cols;
+    document.getElementById('rows').value=rows;
+    document.getElementById('radiusOut').textContent=radius+' px';
+    document.getElementById('colsOut').textContent=cols;
+    document.getElementById('rowsOut').textContent=rows;
+    document.getElementById('erase').classList.remove('active');
+    painted=new Map();structures=new Map();selectedFeature=null;
+    if(Array.isArray(data.painted)){
+     for(const entry of data.painted){
+      if(!Array.isArray(entry)||entry.length!==2||typeof entry[0]!=='string')continue;
+      const match=/^(\d+),(\d+)$/.exec(entry[0]),tile=entry[1];
+      if(!match||!tile||!terrainDefs[tile.type]||!Number.isInteger(tile.index)||tile.index<0)continue;
+      const c=Number(match[1]),r=Number(match[2]);
+      if(c<cols&&r<rows)painted.set(entry[0],{type:tile.type,index:0});
+     }
+    }
+    if(Array.isArray(data.structures)){
+     const validIds=new Set(featureDefs.map(item=>item.id));
+     for(const entry of data.structures){
+      if(!Array.isArray(entry)||entry.length!==2||typeof entry[0]!=='string'||!validIds.has(entry[1]))continue;
+      const match=/^(\d+),(\d+)$/.exec(entry[0]);if(!match)continue;
+      if(Number(match[1])<cols&&Number(match[2])<rows)structures.set(entry[0],entry[1]);
+     }
+    }
+    renderFeaturePalette();
+    setWaterMode('none');setRoadMode('none');
+    riverPaths=[];roadPaths=[];borderPaths=[];riverPreview=[];roadPreview=[];borderPreview=[];
+    resize();
+    const validPaths=(list,allowed,maxNodes)=>Array.isArray(list)?list.filter(p=>
+     p&&Array.isArray(p.ids)&&p.ids.length>=2&&p.ids.every(id=>Number.isInteger(id)&&id>=0&&id<maxNodes)&&allowed.includes(p.type)
+    ).map(p=>({ids:p.ids.slice(),type:p.type,seed:Number.isFinite(p.seed)?p.seed:pathSeed(p.ids)})):[];
+    riverPaths=validPaths(data.rivers,['stream','river','great'],vertexNodes.length);
+    roadPaths=validPaths(data.roads,['trail','road','highway'],roadNodes.length);
+    borderPaths=validPaths(data.borders,['province','region','state'],vertexNodes.length);
+    renderPalette();draw();
+    status.textContent='Progetto caricato: '+file.name;
+   }catch(err){
+    status.textContent='Errore apertura JSON: '+err.message;
+    console.error(err);
+   }finally{jsonFile.value='';}
+  };
+  reader.onerror=()=>{status.textContent='Impossibile leggere il file JSON';jsonFile.value='';};
+  reader.readAsText(file);
+ });
+
+ // Esportazione PNG: ricostruisce l'intera mappa su un canvas autonomo a raggio 100.
+ document.getElementById('savePng').addEventListener('click',()=>{
+  const previousRadius=radius;
+  const exportRadius=42,padding=18;
+  let exportCanvas=null;
+  try{
+   radius=exportRadius;
+   rebuildVertexGraph();
+   rebuildRoadGraph();
+
+   const mapW=(cols-1)*1.5*radius+2*radius;
+   const mapH=(rows-1)*Math.sqrt(3)*radius+Math.sqrt(3)*radius+(cols>1?Math.sqrt(3)*radius/2:0);
+   const outW=Math.ceil(mapW+padding*2),outH=Math.ceil(mapH+padding*2);
+   // Evita di avviare una codifica che il browser non può gestire.
+   if(outW>32767||outH>32767||outW*outH>160000000){
+    throw new Error('La mappa supera i limiti di esportazione del browser. Riduci colonne o righe.');
+   }
+   exportCanvas=document.createElement('canvas');
+   exportCanvas.width=outW;exportCanvas.height=outH;
+   const g=exportCanvas.getContext('2d');
+   if(!g)throw new Error('Impossibile creare il canvas di esportazione.');
+   g.fillStyle='#c1c9bf';g.fillRect(0,0,outW,outH);
+   g.save();g.translate(padding,padding);
+   for(let c=0;c<cols;c++)for(let r=0;r<rows;r++){
+    const p=center(c,r),tile=painted.get(key(c,r));
+    hexPath(g,p.x,p.y,radius+0.5);g.fillStyle='#a4b58c';g.fill();
+    if(tile){
+     const im=terrainDefs[tile.type]?.images[tile.index];
+     if(im?.complete&&im.naturalWidth){
+      g.save();hexPath(g,p.x,p.y,radius+0.5);g.clip();
+      g.drawImage(im,p.x-radius,p.y-radius*0.8660254,radius*2,radius*1.7320508);
+      g.restore();
+     }
+    }
+    hexPath(g,p.x,p.y,radius+0.5);g.strokeStyle='#596b59';g.lineWidth=1.15;g.stroke();
+   }
+   for(const [cellId,featureId] of structures){
+    const match=/^(\d+),(\d+)$/.exec(cellId);if(!match)continue;
+    const c=Number(match[1]),r=Number(match[2]);if(c>=cols||r>=rows)continue;
+    const def=featureDefs.find(item=>item.id===featureId),im=def&&def.image;
+    if(!im||!im.complete||!im.naturalWidth)continue;
+    const p=center(c,r),scale=Math.min(radius*1.5/im.naturalWidth,radius*1.30/im.naturalHeight);
+    const w=im.naturalWidth*scale,h=im.naturalHeight*scale;
+    g.drawImage(im,p.x-w/2,p.y-h/2,w,h);
+   }
+   for(const path of riverPaths)drawRiverPath(path,false,g);
+   for(const path of roadPaths)drawRoadPath(path,g);
+   for(const path of borderPaths)drawBorderPath(path,g);
+   g.restore();
+
+   // Ripristina subito lo stato dell'editor: l'esportazione non cambia la vista corrente.
+   radius=previousRadius;
+   rebuildVertexGraph();rebuildRoadGraph();
+   try{
+    exportCanvas.toBlob(blob=>{
+     if(!blob){status.textContent='Errore durante la codifica PNG';return;}
+     downloadBlob(blob,'hex-map.png');
+     status.textContent=`PNG creato: ${outW} × ${outH} px (raggio esagono 42)`;
+    },'image/png');
+   }catch(exportError){
+    status.textContent='Esportazione bloccata: le texture devono essere servite dallo stesso sito (o con CORS abilitato). Apri l’editor tramite GitHub Pages o un server HTTP, non come file locale.';
+    console.error(exportError);
+   }
+  }catch(err){
+   radius=previousRadius;
+   rebuildVertexGraph();rebuildRoadGraph();
+   status.textContent='Errore esportazione PNG: '+err.message;
+   console.error(err);
+  }
+ });
+
+// Toggle della palette flottante dei terreni.
+ // Schede del pannello Terreni.
+ const paletteTabs=Array.from(document.querySelectorAll('.palette-tab'));
+ const palettePages=Array.from(document.querySelectorAll('.palette-page'));
+ paletteTabs.forEach(tab=>tab.addEventListener('click',()=>{
+  const name=tab.dataset.tab;
+  paletteTabs.forEach(item=>{
+   const selected=item===tab;
+   item.classList.toggle('active',selected);
+   item.setAttribute('aria-selected',String(selected));
+  });
+  palettePages.forEach(page=>{
+   const selected=page.dataset.page===name;
+   page.hidden=!selected;
+   page.classList.toggle('active',selected);
+  });
+ }));
+ const paletteToggle=document.getElementById('togglePalette');
+ const terrainPalette=document.getElementById('palette');
+ paletteToggle.addEventListener('click',()=>{
+  const hidden=terrainPalette.classList.toggle('palette-hidden');
+  paletteToggle.textContent=hidden?'Mostra Elementi mappa':'Nascondi Elementi mappa';
+  paletteToggle.setAttribute('aria-expanded',String(!hidden));
+ });
+ // Palette trascinabile, senza dipendenze esterne.
+const panel=document.getElementById('palette'),head=document.getElementById('paletteTitlebar');let drag=null;head.addEventListener('pointerdown',e=>{drag={x:e.clientX-panel.offsetLeft,y:e.clientY-panel.offsetTop};head.setPointerCapture(e.pointerId)});head.addEventListener('pointermove',e=>{if(!drag)return;panel.style.left=(e.clientX-drag.x)+'px';panel.style.top=(e.clientY-drag.y)+'px';panel.style.right='auto'});head.addEventListener('pointerup',()=>drag=null);head.addEventListener('pointercancel',()=>drag=null);
+renderPalette();
+ const mapScroll=document.getElementById('mapScroll');
+ mapScroll.addEventListener('wheel',e=>{
+  if(!e.shiftKey)return;
+  e.preventDefault();
+  const delta=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
+  mapScroll.scrollLeft+=delta;
+ },{passive:false});
+ let scrollRenderPending=false;
+ mapScroll.addEventListener('scroll',()=>{
+  if(scrollRenderPending)return;
+  scrollRenderPending=true;
+  requestAnimationFrame(()=>{scrollRenderPending=false;draw();});
+ },{passive:true});
+ new ResizeObserver(resize).observe(mapScroll);resize();
+})();
+</script>
+</body></html>
