@@ -2,8 +2,8 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="application-version" content="1.22.11"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HexWorld 1.22.11</title>
+<meta name="application-version" content="0.22.17"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HexWorld 0.22.17</title>
 <style>
 :root{color-scheme:dark;--bg:#171b19;--panel:#222925;--line:#46534b;--ink:#e5e9e5;--muted:#aab5ad;--accent:#91b69a}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,sans-serif;overflow:hidden}
@@ -105,7 +105,7 @@ main{position:relative;height:calc(100vh - 58px);display:grid;grid-template-colu
 
 </style></head>
 <body>
-<header><strong>HexWorld</strong><span>Editor di mappe esagonali · v1.22.11</span><button id="overviewButton" type="button">Mappa completa</button><button id="togglePalette" type="button" aria-controls="palette" aria-expanded="true">Nascondi Elementi mappa</button></header>
+<header><strong>HexWorld</strong><span>Editor di mappe esagonali · v0.22.17</span><button id="overviewButton" type="button">Mappa completa</button><button id="togglePalette" type="button" aria-controls="palette" aria-expanded="true">Nascondi Elementi mappa</button></header>
 <main><aside class="sidebar">
 <div class="group"><h2>Griglia</h2><div class="control"><label for="radius">Zoom mappa</label><output id="radiusOut">42 px</output></div><input id="radius" type="range" min="24" max="100" value="42">
 <div class="control"><label for="cols">Colonne</label><output id="colsOut">24</output></div><input id="cols" type="range" min="8" max="80" value="24">
@@ -167,7 +167,7 @@ const featureDefs=[
  {id:'tower_01',label:'Torre',file:'assets/features/tower_01.png',image:null},
  {id:'tower_02',label:'Torre',file:'assets/features/tower_02.png',image:null},
  {id:'tower_ruins',label:'Rovine di torre',file:'assets/features/tower_ruins.png',image:null},
- {id:'motte_bailey',label:'Motta e bailey',file:'assets/features/motte_bailey.png',image:null},
+ {id:'motte_bailey',label:'Motta castrale',file:'assets/features/motte_bailey.png',image:null},
  {id:'wood_fort',label:'Forte di legno',file:'assets/features/wood_fort.png',image:null},
  {id:'wood_tower',label:'Torre di legno',file:'assets/features/wood_tower.png',image:null},
  {id:'wizard_tower',label:'Torre del mago',file:'assets/features/wizard_tower.png',image:null},
@@ -184,9 +184,9 @@ const featureDefs=[
 ];
 const canvas=document.getElementById('map'),ctx=canvas.getContext('2d');
  const structureLayer=document.getElementById('structureLayer'),structureCtx=structureLayer.getContext('2d');
- const riverLayer=document.getElementById('riverLayer'),riverCtx=riverLayer.getContext('2d');
- const roadLayer=document.getElementById('roadLayer'),roadCtx=roadLayer.getContext('2d');
- const borderLayer=document.getElementById('borderLayer'),borderCtx=borderLayer.getContext('2d');
+ const riverLayer=document.getElementById('riverLayer');let riverCtx=riverLayer.getContext('2d');
+ const roadLayer=document.getElementById('roadLayer');let roadCtx=roadLayer.getContext('2d');
+ const borderLayer=document.getElementById('borderLayer');let borderCtx=borderLayer.getContext('2d');
  const status=document.getElementById('status');
  let riverMode=false,riverStart=null,riverPreview=[],riverPaths=[],riverHover=null;
  let waterType='none',riverCurrentSeed=1;
@@ -666,7 +666,8 @@ function drawRoadLayer(){
 
 function drawBorderPath(path,targetCtx=borderCtx){
  const ids=path.ids;if(!ids||ids.length<2)return;
- const colors={province:'#D6C58A',region:'#E6A34C',state:'#D66B68'};
+ const colors={province:'#D5D9DE',region:'#79D8F2',state:'#E32636'};
+ const outlines={province:'#454B52',region:'#123B5D',state:'#68151B'};
  // Il tratto colorato resta leggibile a tre livelli; il casing scuro separa
  // il confine dal terreno senza coprire completamente fiumi e strade sottostanti.
  const widths={province:3.5,region:4.5,state:5.5};
@@ -689,12 +690,12 @@ function drawBorderPath(path,targetCtx=borderCtx){
     const t0=pos/len,t1=(pos+step)/len;
     const x0=a.x+dx*t0,y0=a.y+dy*t0,x1=a.x+dx*t1,y1=a.y+dy*t1;
     // Contorno esterno: più largo, scuro e trasparente.
-    targetCtx.globalAlpha=.42;
-    targetCtx.strokeStyle='#172019';
+    targetCtx.globalAlpha=.95;
+    targetCtx.strokeStyle=outlines[path.type]||outlines.province;
     targetCtx.lineWidth=(widths[path.type]||3.5)+3.5;
     targetCtx.beginPath();targetCtx.moveTo(x0,y0);targetCtx.lineTo(x1,y1);targetCtx.stroke();
     // Nucleo colorato: mantiene distinguibile la gerarchia amministrativa.
-    targetCtx.globalAlpha=.76;
+    targetCtx.globalAlpha=1;
     targetCtx.strokeStyle=colors[path.type]||colors.province;
     targetCtx.lineWidth=widths[path.type]||3.5;
     targetCtx.beginPath();targetCtx.moveTo(x0,y0);targetCtx.lineTo(x1,y1);targetCtx.stroke();
@@ -716,7 +717,7 @@ function drawBorderLayer(){
  const v=borderPreview.length?[vertexNodes[borderPreview[0]],vertexNodes[borderPreview[borderPreview.length-1]]]:
   (borderHover!==null&&vertexNodes[borderHover]?[vertexNodes[borderHover]]:[]);
  if(v.length){
-  borderCtx.globalAlpha=.75;borderCtx.fillStyle=({province:'#D6C58A',region:'#E6A34C',state:'#D66B68'})[borderType]||'#E6A34C';
+  borderCtx.globalAlpha=1;borderCtx.fillStyle=({province:'#D5D9DE',region:'#79D8F2',state:'#E32636'})[borderType]||'#D5D9DE';
   for(const p of v){borderCtx.beginPath();borderCtx.arc(p.x,p.y,Math.max(3,radius*.055),0,Math.PI*2);borderCtx.fill();}
  }
  borderCtx.restore();
@@ -886,13 +887,20 @@ function bind(id,fn){const el=document.getElementById(id),out=document.getElemen
    const iw=im.naturalWidth*scale,ih=im.naturalHeight*scale;
    g.drawImage(im,ox+p.x-iw/2,oy+p.y-ih/2,iw,ih);
   }
+  // Ricostruisce i tracciati vettoriali sul canvas completo PRIMA
+  // di copiarlo e ridimensionarlo nella panoramica.
+  const lineCanvas=document.createElement('canvas');
+  lineCanvas.width=Math.max(1,Math.ceil(mapW));
+  lineCanvas.height=Math.max(1,Math.ceil(mapH));
+  const lineCtx=lineCanvas.getContext('2d');
+  lineCtx.save();
+  lineCtx.translate(ox,oy);
+  for(const path of riverPaths)drawRiverPath(path,false,lineCtx);
+  for(const path of roadPaths)drawRoadPath(path,lineCtx);
+  for(const path of borderPaths)drawBorderPath(path,lineCtx);
+  lineCtx.restore();
+  g.drawImage(lineCanvas,0,0,mapW,mapH);
   overviewCtx.drawImage(full,0,0,mapW,mapH,0,0,w,h);
-  // I layer vettoriali di linea sono limitati alla viewport corrente.
-  for(const layer of [riverLayer,roadLayer,borderLayer]){
-   if(!layer.width)continue;
-   overviewCtx.drawImage(layer,0,0,layer.width,layer.height,
-    view.scrollLeft,view.scrollTop,view.clientWidth,view.clientHeight);
-  }
  }
  function drawOverview(){
   const layers=[canvas,structureLayer,riverLayer,roadLayer,borderLayer];
