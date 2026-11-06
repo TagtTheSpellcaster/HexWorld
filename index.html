@@ -2,8 +2,8 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="application-version" content="0.22.17"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HexWorld 0.22.17</title>
+<meta name="application-version" content="0.22.18"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HexWorld 0.22.18</title>
 <style>
 :root{color-scheme:dark;--bg:#171b19;--panel:#222925;--line:#46534b;--ink:#e5e9e5;--muted:#aab5ad;--accent:#91b69a}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,sans-serif;overflow:hidden}
@@ -78,9 +78,9 @@ main{position:relative;height:calc(100vh - 58px);display:grid;grid-template-colu
 
 .line-tools{grid-template-rows:repeat(3,minmax(92px,auto))}
 .border-line .line-symbol{font-size:30px;letter-spacing:-2px}
-.province-symbol{color:#D6C58A}
-.region-symbol{color:#E6A34C}
-.state-symbol{color:#D66B68}
+.province-symbol{color:#D5D9DE}
+.region-symbol{color:#79D8F2}
+.state-symbol{color:#E32636}
 
 
 #overviewButton{margin-left:auto;margin-right:8px}
@@ -105,7 +105,7 @@ main{position:relative;height:calc(100vh - 58px);display:grid;grid-template-colu
 
 </style></head>
 <body>
-<header><strong>HexWorld</strong><span>Editor di mappe esagonali · v0.22.17</span><button id="overviewButton" type="button">Mappa completa</button><button id="togglePalette" type="button" aria-controls="palette" aria-expanded="true">Nascondi Elementi mappa</button></header>
+<header><strong>HexWorld</strong><span>Editor di mappe esagonali · v0.22.18</span><button id="overviewButton" type="button">Mappa completa</button><button id="togglePalette" type="button" aria-controls="palette" aria-expanded="true">Nascondi Elementi mappa</button></header>
 <main><aside class="sidebar">
 <div class="group"><h2>Griglia</h2><div class="control"><label for="radius">Zoom mappa</label><output id="radiusOut">42 px</output></div><input id="radius" type="range" min="24" max="100" value="42">
 <div class="control"><label for="cols">Colonne</label><output id="colsOut">24</output></div><input id="cols" type="range" min="8" max="80" value="24">
