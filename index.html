@@ -2,13 +2,13 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<meta name="application-version" content="1.22.8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HexWorld 1.22.8</title>
+<meta name="application-version" content="1.22.11"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HexWorld 1.22.11</title>
 <style>
 :root{color-scheme:dark;--bg:#171b19;--panel:#222925;--line:#46534b;--ink:#e5e9e5;--muted:#aab5ad;--accent:#91b69a}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,sans-serif;overflow:hidden}
 header{height:58px;display:flex;align-items:center;padding:0 18px;border-bottom:1px solid var(--line);background:#202722;gap:18px}header strong{font-size:16px}header span{color:var(--muted)}#togglePalette{margin-left:auto}
-main{position:relative;height:calc(100vh - 58px);display:grid;grid-template-columns:250px 1fr;min-height:0}.sidebar{padding:16px;background:var(--panel);border-right:1px solid var(--line);overflow:auto}.group{margin-bottom:20px}.group h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px}.control{display:flex;justify-content:space-between;align-items:center;margin:10px 0 5px}.control output{color:var(--accent);font-variant-numeric:tabular-nums}input[type=range]{width:100%;accent-color:var(--accent)}button{font:inherit;color:var(--ink);background:#303a33;border:1px solid var(--line);border-radius:6px;padding:8px 10px;cursor:pointer}button:hover{border-color:var(--accent)}button.active{border-color:var(--accent);background:#354a3a}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button#waterTool,.actions button#roadTool{width:190px;min-width:190px;max-width:190px;flex:0 0 190px;white-space:nowrap;text-align:center}.stage{position:relative;min-width:0;min-height:0;background:#aab2a7;background-image:radial-gradient(#89958b 0.7px,transparent .7px);background-size:16px 16px}.stage{overflow:hidden}.map-scroll{position:absolute;inset:0;overflow:auto;overscroll-behavior:contain}.map-scroll #structureLayer,.map-scroll #riverLayer,.map-scroll #roadLayer{position:absolute;left:0;top:0;pointer-events:none}.map-scroll #structureLayer{z-index:1}.map-scroll #riverLayer{z-index:2}.map-scroll #roadLayer{z-index:3}.map-scroll #borderLayer{position:absolute;left:0;top:0;z-index:4;pointer-events:none}.map-scroll.river-mode #riverLayer,.map-scroll.road-mode #roadLayer{pointer-events:auto;cursor:crosshair}.map-scroll.border-mode #borderLayer{pointer-events:auto;cursor:crosshair}.map-scroll canvas{display:block;width:auto;height:auto;max-width:none;max-height:none;cursor:crosshair}canvas{display:block;cursor:crosshair}
+main{position:relative;height:calc(100vh - 58px);display:grid;grid-template-columns:250px 1fr;min-height:0}.sidebar{padding:16px;background:var(--panel);border-right:1px solid var(--line);overflow:auto}.group{margin-bottom:20px}.group h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px}.control{display:flex;justify-content:space-between;align-items:center;margin:10px 0 5px}.control output{color:var(--accent);font-variant-numeric:tabular-nums}input[type=range]{width:100%;accent-color:var(--accent)}button{font:inherit;color:var(--ink);background:#303a33;border:1px solid var(--line);border-radius:6px;padding:8px 10px;cursor:pointer}button:hover{border-color:var(--accent)}button.active{border-color:var(--accent);background:#354a3a}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button#waterTool,.actions button#roadTool{width:190px;min-width:190px;max-width:190px;flex:0 0 190px;white-space:nowrap;text-align:center}.stage{position:relative;min-width:0;min-height:0;background:#aab2a7;background-image:radial-gradient(#89958b 0.7px,transparent .7px);background-size:16px 16px}.stage{overflow:hidden}.map-scroll{position:absolute;inset:0;overflow:auto;overscroll-behavior:contain}.map-scroll #structureLayer,.map-scroll #riverLayer,.map-scroll #roadLayer{position:absolute;left:0;top:0;pointer-events:none}.map-scroll #riverLayer{z-index:2}.map-scroll #roadLayer{z-index:3}.map-scroll #structureLayer{z-index:4}.map-scroll #borderLayer{position:absolute;left:0;top:0;z-index:5;pointer-events:none}.map-scroll.river-mode #riverLayer,.map-scroll.road-mode #roadLayer{pointer-events:auto;cursor:crosshair}.map-scroll.border-mode #borderLayer{pointer-events:auto;cursor:crosshair}.map-scroll canvas{display:block;width:auto;height:auto;max-width:none;max-height:none;cursor:crosshair}canvas{display:block;cursor:crosshair}
 #palette.palette-hidden{display:none}#palette{position:absolute;isolation:isolate;top:18px;right:18px;width:260px;background:rgba(28,35,30,.96);border:1px solid #65766a;border-radius:9px;box-shadow:0 8px 30px #0007;z-index:3;overflow:hidden}#paletteHead{height:38px;padding:8px 11px;background:#303b33;cursor:move;display:flex;justify-content:space-between;align-items:center;font-weight:600;user-select:none}#paletteBody{padding:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.terrain{min-width:0;border:1px solid #65766a;border-radius:7px;padding:7px;background:#202722;color:var(--muted);cursor:pointer;text-align:center;font-size:12px}.terrain.active{border:2px solid #b6dbb9;padding:6px;background:#34483a;color:#fff}.terrain-icon{width:100%;height:92px;display:block}.variant-strip{display:none;grid-column:1/-1;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding:8px;border:1px solid #536257;border-radius:7px;background:#1a211c}.variant-strip.open{display:grid}.variant{min-width:0;padding:4px;border:1px solid #536257;background:#252e28;border-radius:5px;color:var(--muted);font-size:10px}.variant.active{border:2px solid #b6dbb9;padding:3px;color:#fff}.variant canvas{width:100%;height:auto;aspect-ratio:1.15}.tile{border:1px solid #65766a;border-radius:6px;padding:5px;background:#202722;cursor:pointer;text-align:center;font-size:11px;color:var(--muted)}.tile.selected{border:2px solid #b6dbb9;padding:4px;background:#34483a;color:#fff}.tile canvas{width:100%;height:auto;aspect-ratio:1.15;cursor:pointer}.hint{font-size:12px;color:var(--muted);margin-top:10px}.status{position:absolute;left:14px;bottom:12px;background:#202722dd;color:#e6eee7;border:1px solid #526156;border-radius:5px;padding:6px 9px;font-size:12px;pointer-events:none}
 @media(max-width:700px){main{grid-template-columns:190px 1fr}.sidebar{padding:10px}#palette{width:210px;right:8px;top:8px}#paletteBody{gap:5px;padding:7px}}
 
@@ -84,7 +84,7 @@ main{position:relative;height:calc(100vh - 58px);display:grid;grid-template-colu
 
 
 #overviewButton{margin-left:auto;margin-right:8px}
-#overviewBackdrop{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.68);display:flex;align-items:center;justify-content:center}
+#overviewBackdrop{position:fixed;inset:0;z-index:1000000;background:rgba(0,0,0,.68);display:flex;align-items:center;justify-content:center}
 #overviewBackdrop[hidden]{display:none}
 #overviewDialog{width:75vw;height:75vh;max-width:75vw;max-height:75vh;box-sizing:border-box;padding:12px;background:#202722;border:1px solid #68776c;border-radius:10px;box-shadow:0 16px 55px rgba(0,0,0,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
 #overviewHeading{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;color:#f0f3ef;font-size:14px;font-weight:700}
@@ -98,14 +98,14 @@ main{position:relative;height:calc(100vh - 58px);display:grid;grid-template-colu
 #mapLayerStack canvas{position:absolute!important;left:0!important;top:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;pointer-events:none}
 #mapLayerStack #map{pointer-events:auto!important;cursor:crosshair}
 #mapScroll #map{z-index:0}
-#mapScroll #structureLayer{z-index:1}
 #mapScroll #riverLayer{z-index:2}
 #mapScroll #roadLayer{z-index:3}
-#mapScroll #borderLayer{z-index:4}
+#mapScroll #structureLayer{z-index:4}
+#mapScroll #borderLayer{z-index:5}
 
 </style></head>
 <body>
-<header><strong>HexWorld</strong><span>Editor di mappe esagonali · v1.21.0</span><button id="overviewButton" type="button">Mappa completa</button><button id="togglePalette" type="button" aria-controls="palette" aria-expanded="true">Nascondi Elementi mappa</button></header>
+<header><strong>HexWorld</strong><span>Editor di mappe esagonali · v1.22.11</span><button id="overviewButton" type="button">Mappa completa</button><button id="togglePalette" type="button" aria-controls="palette" aria-expanded="true">Nascondi Elementi mappa</button></header>
 <main><aside class="sidebar">
 <div class="group"><h2>Griglia</h2><div class="control"><label for="radius">Zoom mappa</label><output id="radiusOut">42 px</output></div><input id="radius" type="range" min="24" max="100" value="42">
 <div class="control"><label for="cols">Colonne</label><output id="colsOut">24</output></div><input id="cols" type="range" min="8" max="80" value="24">
@@ -769,10 +769,16 @@ function renderFeaturePalette(){
  }
 }
 function mapPoint(e){
- const rect=document.getElementById('mapScroll').getBoundingClientRect(),s=Number(canvas.dataset.scale||1),
- ox=Number(canvas.dataset.ox||0),oy=Number(canvas.dataset.oy||0);
+ // Il canvas e' sticky nella viewport: le coordinate del puntatore vanno
+ // riferite al suo rettangolo effettivo, non a quello del contenitore scroll.
+ const rect=canvas.getBoundingClientRect();
  const view=mapViewport();
- return {x:(e.clientX-rect.left+view.left-ox)/s,y:(e.clientY-rect.top+view.top-oy)/s};
+ const s=Number(canvas.dataset.scale||1);
+ const ox=Number(canvas.dataset.ox||0),oy=Number(canvas.dataset.oy||0);
+ return {
+  x:(e.clientX-rect.left+view.left-ox)/s,
+  y:(e.clientY-rect.top+view.top-oy)/s
+ };
 }
 function cellAt(x,y){
  let best=null,dist=Infinity;
@@ -814,7 +820,7 @@ canvas.addEventListener('pointerdown',e=>{
  if(e.button!==0)return;
  e.preventDefault();
  if(selectedFeature!==null){
-  const cell=cellAt(...Object.values(mapPoint(e)));
+  const cell=(()=>{const p=mapPoint(e);return cellAt(p.x,p.y)})();
   if(!cell){status.textContent='Punto esterno alla griglia';return;}
   const def=featureDefs.find(item=>item.id===selectedFeature);
   if(!def||!def.image||!def.image.complete||!def.image.naturalWidth){
@@ -864,13 +870,25 @@ function bind(id,fn){const el=document.getElementById(id),out=document.getElemen
   const mapW=overviewMapW,mapH=overviewMapH,view=mapScrollEl;
   const full=document.createElement('canvas');full.width=Math.max(1,Math.ceil(mapW));full.height=Math.max(1,Math.ceil(mapH));
   const g=full.getContext('2d');g.fillStyle='#c1c9bf';g.fillRect(0,0,mapW,mapH);
+  const ox=Number(canvas.dataset.ox||0),oy=Number(canvas.dataset.oy||0);
   for(let cy=0;cy<Math.ceil(rows/CHUNK_SIZE);cy++)for(let cx=0;cx<Math.ceil(cols/CHUNK_SIZE);cx++){
    const chunk=terrainChunkCache.get(chunkKey(cx,cy))||buildTerrainChunk(cx,cy);
-   if(chunk)g.drawImage(chunk.canvas,chunk.x+Number(canvas.dataset.ox||0),chunk.y+Number(canvas.dataset.oy||0),chunk.w,chunk.h);
+   if(chunk)g.drawImage(chunk.canvas,chunk.x+ox,chunk.y+oy,chunk.w,chunk.h);
+  }
+  // Le strutture vengono ricomposte direttamente nello spazio geografico
+  // dell'intera mappa, prima del ridimensionamento della panoramica.
+  for(const [cellId,featureId] of structures){
+   const match=/^(\d+),(\d+)$/.exec(cellId);if(!match)continue;
+   const c=Number(match[1]),r=Number(match[2]);if(c>=cols||r>=rows)continue;
+   const def=featureDefs.find(item=>item.id===featureId),im=def&&def.image;
+   if(!im||!im.complete||!im.naturalWidth)continue;
+   const p=center(c,r),scale=Math.min(radius*1.5/im.naturalWidth,radius*1.30/im.naturalHeight);
+   const iw=im.naturalWidth*scale,ih=im.naturalHeight*scale;
+   g.drawImage(im,ox+p.x-iw/2,oy+p.y-ih/2,iw,ih);
   }
   overviewCtx.drawImage(full,0,0,mapW,mapH,0,0,w,h);
-  // Vettori: le superfici visibili sono riportate nella loro posizione geografica corrente.
-  for(const layer of [structureLayer,riverLayer,roadLayer,borderLayer]){
+  // I layer vettoriali di linea sono limitati alla viewport corrente.
+  for(const layer of [riverLayer,roadLayer,borderLayer]){
    if(!layer.width)continue;
    overviewCtx.drawImage(layer,0,0,layer.width,layer.height,
     view.scrollLeft,view.scrollTop,view.clientWidth,view.clientHeight);
